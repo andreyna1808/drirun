@@ -23,26 +23,16 @@ import {
   SUPPORTED_LANGUAGES,
   SupportedLanguage,
   changeLanguage,
-  getCurrentLanguage,
 } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 
 export default function SettingsScreen() {
   const { state, dispatch } = useApp();
   const colors = useColors();
+  const { t, i18n } = useTranslation();
   const [goalDaysInput, setGoalDaysInput] = useState(String(state.goalDays));
   const [editingGoal, setEditingGoal] = useState(false);
-  const [currentLang, setCurrentLang] = useState<SupportedLanguage>();
-
-
-  useEffect(() => {
-
-    const getLang = async () => {
-      const lang = await getCurrentLanguage();
-      setCurrentLang(lang as SupportedLanguage);
-    }
-
-    getLang();
-  }, []);
+  const [currentLang, setCurrentLang] = useState<SupportedLanguage>(i18n.language as SupportedLanguage);
 
   // ── Atualizar meta de dias ─────────────────────────────────────────────────
   function handleGoalChange(text: string) {
@@ -85,9 +75,9 @@ export default function SettingsScreen() {
   async function handleLanguageChange(lang: SupportedLanguage) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await changeLanguage(lang);
-    setCurrentLang(lang);
+    setCurrentLang(lang);                    // força a re-renderização com o novo idioma
+    console.log('Idioma alterado para:', lang); // agora mostra o valor correto
   }
-
   // ── Configurar notificacoes ────────────────────────────────────────────────
   function handleToggleNotifications(enabled: boolean) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -347,9 +337,9 @@ export default function SettingsScreen() {
               <Text style={[styles.shopItemDoneText, { color: colors.success }]}>Anúncios removidos</Text>
             </View>
           )}
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          {/* <View style={[styles.divider, { backgroundColor: colors.border }]} /> */}
           {/* Saldo e link para loja */}
-          <View style={styles.gemsBalanceRow}>
+          {/* <View style={styles.gemsBalanceRow}>
             <Text style={[styles.gemsBalance, { color: colors.foreground }]}>💎 {state.gems} gemas</Text>
             <TouchableOpacity
               style={[styles.goShopButton, { backgroundColor: colors.primary }]}
@@ -357,7 +347,7 @@ export default function SettingsScreen() {
             >
               <Text style={styles.goShopText}>🛒 Pet Shop</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
         {/* ── Sobre ── */}

@@ -376,7 +376,7 @@ export default function PetScreen() {
         )}
 
         {/* ── Saldo de gemas + botões de Loja e Galeria ── */}
-        <View style={styles.shopCard}>
+        {/* <View style={styles.shopCard}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <Text style={styles.shopTitle}>💎 {state.gems} gemas</Text>
             <Text style={[{ fontSize: 12, color: colors.muted }]}>+25💎 por corrida</Text>
@@ -399,7 +399,7 @@ export default function PetScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
         <View style={{ height: 20 }} />
       </ScrollView>
