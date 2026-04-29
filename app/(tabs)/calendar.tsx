@@ -37,12 +37,12 @@ interface BMICategory {
 }
 
 const BMI_CATEGORIES: BMICategory[] = [
-  { label: "Abaixo do peso",  color: "#60A5FA", emoji: "📉", min: 0,    max: 18.5 },
-  { label: "Peso normal",     color: "#34D399", emoji: "✅", min: 18.5, max: 25   },
-  { label: "Sobrepeso",       color: "#FBBF24", emoji: "⚠️", min: 25,   max: 30   },
-  { label: "Obesidade I",     color: "#F97316", emoji: "🔶", min: 30,   max: 35   },
-  { label: "Obesidade II",    color: "#EF4444", emoji: "🔴", min: 35,   max: 40   },
-  { label: "Obesidade III",   color: "#991B1B", emoji: "🚨", min: 40,   max: 999  },
+  { label: "Abaixo do peso", color: "#60A5FA", emoji: "📉", min: 0, max: 18.5 },
+  { label: "Peso normal", color: "#34D399", emoji: "✅", min: 18.5, max: 25 },
+  { label: "Sobrepeso", color: "#FBBF24", emoji: "⚠️", min: 25, max: 30 },
+  { label: "Obesidade I", color: "#F97316", emoji: "🔶", min: 30, max: 35 },
+  { label: "Obesidade II", color: "#EF4444", emoji: "🔴", min: 35, max: 40 },
+  { label: "Obesidade III", color: "#991B1B", emoji: "🚨", min: 40, max: 999 },
 ];
 
 function getBMICategory(bmi: number): BMICategory {
@@ -68,18 +68,33 @@ export default function CalendarScreen() {
   // ── Grade do calendario ─────────────────────────────────────────────────────
   const calendarDays = useMemo(() => {
     if (!state.goalStartDate) return [];
-    const startDate = new Date(state.goalStartDate);
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+
+    // Cria a data de início no fuso LOCAL (ignora horas)
+    const [y, m, d] = state.goalStartDate.split("-").map(Number);
+    const startDate = new Date(y, m - 1, d); // mês é 0‑indexado
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0); // zera horas para comparar só a data
+
     const days = [];
+
     for (let i = 0; i < state.goalDays; i++) {
       const dayDate = new Date(startDate);
       dayDate.setDate(startDate.getDate() + i);
+      dayDate.setHours(12, 0, 0, 0); // meio‑dia evita virada de fuso
+
+      // String da data no formato YYYY-MM-DD (local)
       const dateStr = dayDate.toISOString().split("T")[0];
       const hasRun = state.runs.some((r) => r.date === dateStr);
-      const isPast = dayDate < today;
-      const isToday = dayDate.toDateString() === new Date().toDateString();
+
+      // Comparação segura: apenas a data (ignora horas)
+      const dayDateOnly = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate());
+      const todayDateOnly = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+
+      const isPast = dayDateOnly < todayDateOnly;
+      const isToday = dayDateOnly.getTime() === todayDateOnly.getTime();
+
       let status: "done" | "missed" | "future" | "today";
+
       if (isToday) {
         status = hasRun ? "done" : "today";
       } else if (isPast) {
@@ -87,10 +102,19 @@ export default function CalendarScreen() {
       } else {
         status = "future";
       }
+
       days.push({ dayNumber: i + 1, date: dateStr, status, hasRun });
     }
+
     return days;
   }, [state.goalStartDate, state.goalDays, state.runs]);
+
+  console.log("Calendar state:", {
+    goalStartDate: state.goalStartDate,
+    goalDays: state.goalDays,
+    runsCount: state.runs.length,
+  });
+
 
   // Estatisticas
   const stats = useMemo(() => {
@@ -191,17 +215,17 @@ export default function CalendarScreen() {
 
           {/* Estatisticas */}
           <View style={styles.statsRow}>
-            <StatBox value={stats.done}      label="Feitos"    color={colors.success}  colors={colors} />
-            <StatBox value={stats.missed}    label="Perdidos"  color={colors.error}    colors={colors} />
-            <StatBox value={stats.remaining} label="Restantes" color={colors.muted}    colors={colors} />
+            <StatBox value={stats.done} label="Feitos" color={colors.success} colors={colors} />
+            <StatBox value={stats.missed} label="Perdidos" color={colors.error} colors={colors} />
+            <StatBox value={stats.remaining} label="Restantes" color={colors.muted} colors={colors} />
             <StatBox value={`${stats.percent}%`} label="Progresso" color={colors.primary} colors={colors} />
           </View>
 
           {/* Legenda */}
           <View style={styles.legendRow}>
             <LegendItem color={colors.success} emoji="😊" label="Feito" />
-            <LegendItem color={colors.error}   emoji="😢" label="Perdido" />
-            <LegendItem color={colors.muted}   emoji="○"  label="Futuro" />
+            <LegendItem color={colors.error} emoji="😢" label="Perdido" />
+            <LegendItem color={colors.muted} emoji="○" label="Futuro" />
           </View>
 
           {/* Grade de dias */}
@@ -216,22 +240,22 @@ export default function CalendarScreen() {
             <View style={styles.grid}>
               {calendarDays.map((day) => {
                 const bgColor =
-                  day.status === "done"   ? colors.success :
-                  day.status === "missed" ? colors.error :
-                  day.status === "today"  ? colors.primary :
-                  colors.surface;
+                  day.status === "done" ? colors.success :
+                    day.status === "missed" ? colors.error :
+                      day.status === "today" ? colors.primary :
+                        colors.surface;
 
                 const borderColor =
                   day.status === "today" ? colors.primary :
-                  day.status === "done"  ? colors.success :
-                  day.status === "missed"? colors.error :
-                  colors.border;
+                    day.status === "done" ? colors.success :
+                      day.status === "missed" ? colors.error :
+                        colors.border;
 
                 const emoji =
-                  day.status === "done"   ? "😊" :
-                  day.status === "missed" ? "😢" :
-                  day.status === "today"  ? "⭐" :
-                  "";
+                  day.status === "done" ? "😊" :
+                    day.status === "missed" ? "😢" :
+                      day.status === "today" ? "⭐" :
+                        "";
 
                 return (
                   <View

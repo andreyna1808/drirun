@@ -3,17 +3,24 @@ import { initReactI18next } from 'react-i18next';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Importe as traduções
-import pt from './locales/pt'; // se tiver
-import en from './locales/en'; // se tiver
+import pt from './locales/pt';
+import en from './locales/en';
 import es from './locales/es';
 
 const STORAGE_KEY = '@drirun:language';
 
+export type SupportedLanguage = "pt" | "en" | "es";
+
+export const SUPPORTED_LANGUAGES: { code: SupportedLanguage; label: string; flag: string }[] = [
+  { code: "pt", label: "Português", flag: "🇧🇷" },
+  { code: "en", label: "English", flag: "🇺🇸" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+];
+
+
 export const initI18n = async () => {
-  let savedLanguage = await AsyncStorage.getItem(STORAGE_KEY);
-  const deviceLanguage = Localization.getLocales()[0]?.languageCode ?? 'pt';
-  const defaultLanguage = savedLanguage || deviceLanguage || 'en';
+  const getLang = await getCurrentLanguage();
+  const defaultLanguage = getLang;
 
   await i18n.use(initReactI18next).init({
     resources: {
@@ -32,6 +39,13 @@ export const initI18n = async () => {
 export const changeLanguage = async (lang: string) => {
   await i18n.changeLanguage(lang);
   await AsyncStorage.setItem(STORAGE_KEY, lang);
+};
+
+export const getCurrentLanguage = async () => {
+  let savedLanguage = await AsyncStorage.getItem(STORAGE_KEY);
+  const deviceLanguage = Localization.getLocales()[0]?.languageCode ?? 'pt';
+  const defaultLanguage = savedLanguage || deviceLanguage || 'en';
+  return defaultLanguage;
 };
 
 export default i18n;

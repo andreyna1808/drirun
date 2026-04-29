@@ -3,7 +3,7 @@
  * Tela de Configuracoes do DriRun.
  * Inclui: perfil, meta de dias, notificacoes, idioma, loja, sobre e zona de perigo.
  */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -21,9 +21,9 @@ import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
 import {
   SUPPORTED_LANGUAGES,
+  SupportedLanguage,
   changeLanguage,
   getCurrentLanguage,
-  type SupportedLanguage,
 } from "@/lib/i18n";
 
 export default function SettingsScreen() {
@@ -31,7 +31,18 @@ export default function SettingsScreen() {
   const colors = useColors();
   const [goalDaysInput, setGoalDaysInput] = useState(String(state.goalDays));
   const [editingGoal, setEditingGoal] = useState(false);
-  const [currentLang, setCurrentLang] = useState<SupportedLanguage>(getCurrentLanguage());
+  const [currentLang, setCurrentLang] = useState<SupportedLanguage>();
+
+
+  useEffect(() => {
+
+    const getLang = async () => {
+      const lang = await getCurrentLanguage();
+      setCurrentLang(lang as SupportedLanguage);
+    }
+
+    getLang();
+  }, []);
 
   // ── Atualizar meta de dias ─────────────────────────────────────────────────
   function handleGoalChange(text: string) {
@@ -178,25 +189,26 @@ export default function SettingsScreen() {
 
         {/* ── Perfil ── */}
         <SectionHeader title="Perfil" colors={colors} />
-        <View style={styles.card}>
-          {state.profile && (
-            <>
-              <InfoRow label="Nome" value={state.profile.name} colors={colors} />
-              <InfoRow label="Idade" value={`${state.profile.age} anos`} colors={colors} />
-              <InfoRow label="Peso" value={`${state.profile.weight} kg`} colors={colors} />
-              <InfoRow label="Altura" value={`${state.profile.height} cm`} colors={colors} />
-              <InfoRow
-                label="Sexo"
-                value={
-                  state.profile.sex === "male" ? "Masculino" :
-                  state.profile.sex === "female" ? "Feminino" : "Outro"
-                }
-                colors={colors}
-                isLast
-              />
-            </>
-          )}
-        </View>
+        <TouchableOpacity
+          style={[styles.aboutButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/settings/profile");
+          }}
+        >
+          <Text style={styles.aboutEmoji}>👤</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.aboutTitle, { color: colors.foreground }]}>
+              {state.profile?.name ?? "Atleta"}
+            </Text>
+            <Text style={[styles.aboutSubtitle, { color: colors.muted }]}>
+              {state.profile
+                ? `${state.profile.age} anos • ${state.profile.weight}kg • ${state.profile.height}cm`
+                : "Toque para editar"}
+            </Text>
+          </View>
+          <Text style={[styles.aboutArrow, { color: colors.muted }]}>›</Text>
+        </TouchableOpacity>
 
         {/* ── Meta de Dias ── */}
         <SectionHeader title="Meta de Dias" colors={colors} />
@@ -352,7 +364,7 @@ export default function SettingsScreen() {
         <SectionHeader title="Sobre" colors={colors} />
         <TouchableOpacity
           style={[styles.aboutButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/about"); }}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/settings/about"); }}
         >
           <Text style={styles.aboutEmoji}>ℹ️</Text>
           <View style={{ flex: 1 }}>

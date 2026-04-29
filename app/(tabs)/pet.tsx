@@ -38,7 +38,7 @@ interface PetStateConfig {
 const PET_STATES: Record<PetState, PetStateConfig> = {
   egg: {
     emoji: "🥚",
-    title: "Ovo Misterioso",
+    title: "Ovo Fênix",
     description: "Sua Fênix ainda não nasceu. Complete sua primeira corrida para ela eclodir!",
     color: "#FFD700",
     animation: "pulse",

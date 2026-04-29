@@ -46,7 +46,8 @@ export default function TabLayout() {
         }}
       />
 
-      {/* <Tabs.Screen name="index" options={{ href: null }} /> */}
+      <Tabs.Screen name="settings/profile" options={{ href: null }} />
+      <Tabs.Screen name="settings/about" options={{ href: null }} />
 
       {/* Métricas */}
       <Tabs.Screen
@@ -111,7 +112,7 @@ export default function TabLayout() {
 
       {/* Configurações */}
       <Tabs.Screen
-        name="settings"
+        name="settings/index"
         options={{
           title: "Config",
           tabBarIcon: ({ color }) => (

@@ -38,7 +38,7 @@ function RootNavigator() {
       <Stack.Screen name="tracking" options={{ presentation: "fullScreenModal" }} />
       <Stack.Screen name="run-summary" options={{ presentation: "modal" }} />
       <Stack.Screen name="celebration" options={{ presentation: "fullScreenModal" }} />
-      <Stack.Screen name="about" />
+      <Stack.Screen name="settings/about" />
       <Stack.Screen name="shop" />
       <Stack.Screen name="pet-gallery" />
     </Stack>
