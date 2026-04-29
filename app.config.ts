@@ -1,4 +1,5 @@
 import type { ExpoConfig } from "expo/config";
+import 'dotenv/config';
 
 const config: ExpoConfig = {
   name: "Dri GoRun?!",
@@ -66,6 +67,29 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
   },
+
+  // ─────────────────────────────────────────────────────────────
+  // Variáveis de ambiente (acessíveis via Constants.expoConfig.extra)
+  // ─────────────────────────────────────────────────────────────
+  extra: {
+    ORIGIN_VIDEO_URL: process.env.ORIGIN_VIDEO_URL,
+    ORIGIN_LINKEDIN_URL: process.env.ORIGIN_LINKEDIN_URL,
+    ORIGIN_YOUTUBE_CHANEL_URL: process.env.ORIGIN_YOUTUBE_CHANEL_URL,
+    ORIGIN_GITHUB_URL: process.env.ORIGIN_GITHUB_URL,
+    ORIGIN_HELP_APP: process.env.ORIGIN_HELP_APP,
+  },
+
+  intentFilters: [
+    {
+      action: "VIEW",
+      data: [
+        { scheme: "https", host: "www.youtube.com" },
+        { scheme: "https", host: "www.linkedin.com" },
+        { scheme: "https", host: "github.com" },
+        { scheme: "https", host: "link.mercadopago.com.br" },
+      ],
+    },
+  ],
 };
 
 export default config;

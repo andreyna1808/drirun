@@ -1,6 +1,3 @@
-/**
- * pt.ts — Traduções em Português (padrão)
- */
 export default {
   // Geral
   app_name: "DriRun",
@@ -152,6 +149,7 @@ export default {
   pet_rip_title: "R.I.P. {{name}}",
   pet_rip_reason: "Motivo: {{owner}} não foi consistente.",
   pet_reborn_msg: "Das cinzas, {{name}} renasce! Seja consistente desta vez!",
+  pet_default_name: "Meu Pet",
 
   // Pet States
   pet_state_egg: "Ovo Misterioso",
@@ -186,23 +184,41 @@ export default {
   shop_watch_ad: "Assistir Anúncio (+50 gemas)",
 
   // Configurações
-  settings_title: "Configurações",
+  settings_title: "⚙️ Configurações",
   settings_profile: "Perfil",
-  settings_goal: "Meta",
+  settings_goal: "Meta de Dias",
   settings_notifications: "Notificações",
-  settings_notifications_enabled: "Lembretes diários",
+  settings_notifications_daily: "Lembrete diário",
+  settings_notifications_pet_reminder: "vai te lembrar de correr!",
   settings_notifications_time: "Horário do lembrete",
-  settings_language: "Idioma",
-  settings_language_pt: "Português",
-  settings_language_en: "English",
-  settings_language_es: "Español",
+  settings_language: "Idioma / Language / Idioma",
   settings_remove_ads: "Remover Anúncios",
   settings_remove_ads_price: "R$ 9,90",
-  settings_reset: "Recomeçar do Zero",
-  settings_reset_confirm_title: "Recomeçar?",
-  settings_reset_confirm_msg: "Isso apagará todo o seu progresso, corridas e seu pet. Tem certeza?",
-  settings_reset_success: "Seja consistente agora! Uma nova jornada começa. 🔥",
-  settings_danger_zone: "Zona de Perigo",
+  settings_remove_ads_title: "Remover Anúncios",
+  settings_remove_ads_msg: "Remova os anúncios por R$ 9,90 (compra única).",
+  settings_remove_ads_buy: "Comprar",
+  settings_remove_ads_success: "Anúncios removidos. Obrigado pelo apoio! 🎉",
+  settings_remove_ads_desc: "Experiência limpa e sem interrupções",
+  settings_ads_removed: "Anúncios removidos",
+  settings_reset: "Resetar todos os dados",
+  settings_reset_confirm_title: "Resetar tudo?",
+  settings_reset_confirm_msg: "Isso apagará todos os seus dados, corridas e o pet. Essa ação não pode ser desfeita.",
+  settings_reset_button: "Resetar",
+  settings_reset_success_title: "Novo começo! 🔥",
+  settings_reset_success_msg: "Seja consistente agora! Cada dia é uma nova oportunidade de evoluir. Sua Fênix está esperando por você!",
+  settings_reset_success_button: "Vamos lá! 💪",
+  settings_danger_zone: "⚠️ Zona de Perigo",
+  settings_goal_days: "Dias da Meta",
+  settings_goal_hint: "Mínimo: 1 dia • Máximo: 365 dias",
+  settings_goal_completed: "dias concluídos",
+  settings_goal_change_title: "Alterar meta?",
+  settings_goal_change_msg: "Deseja alterar sua meta para {{value}} dias? O progresso atual será mantido.",
+  settings_athlete: "Atleta",
+  settings_years: "anos",
+  settings_tap_to_edit: "Toque para editar",
+  settings_shop: "Loja",
+  settings_about: "Sobre",
+  settings_about_desc: "Origem, vídeo motivacional, links e créditos",
 
   // Sobre
   about_title: "Sobre o DriRun",
@@ -225,4 +241,27 @@ export default {
   error_weight_invalid: "Insira um peso entre 20 e 300 kg.",
   error_sex_required: "Por favor, selecione seu sexo.",
   error_goal_invalid: "Insira pelo menos 1 dia.",
+
+  // ABOUT
+  about_project_title: "O Projeto",
+  about_project_details: "O DriRun combina rastreamento de corrida com GPS, um pet virtual motivacional (a Fênix), métricas de desempenho e um sistema de recompensas — tudo armazenado localmente no seu dispositivo.",
+  about_video_description: "Assista ao vídeo que inspirou a criação do DriRun e entenda a filosofia por trás do app.",
+  about_video_button: "Assistir no YouTube",
+  about_social_intro: "Conecte-se, contribua com o projeto ou acompanhe o desenvolvimento:",
+  about_social_linkedin_desc: "Conecte-se profissionalmente",
+  about_social_youtube_desc: "Tutoriais e conteúdo",
+  about_social_github_desc: "Clone, contribua e crie o seu!",
+  about_open_source_title: "Open Source",
+  about_open_source_description: "Este projeto é completamente open source. Se você é desenvolvedor, pode clonar o repositório, estudar o código, fazer melhorias e criar sua própria versão personalizada do DriRun!",
+  about_tech_stack: "Stack: React Native • Expo • TypeScript • AsyncStorage",
+  about_support_title: "Apoie o Projeto",
+  about_support_description: "Se o DriRun te ajuda a manter o foco e a correr, considere fazer uma contribuição para manter o projeto vivo e em evolução! Toda ajuda é bem-vinda, nem que seja um chá ☕.",
+  about_support_button: "Contribuir com um chá ☕",
+  about_link_error: "Não foi possível abrir o link.",
+
+  // Profile Edit
+  profile_edit_title: "Editar Perfil",
+  profile_save_button: "Salvar Alterações",
+  profile_save_success: "Perfil atualizado!",
+
 };

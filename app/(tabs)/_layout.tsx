@@ -46,8 +46,8 @@ export default function TabLayout() {
         }}
       />
 
-      <Tabs.Screen name="settings/profile" options={{ href: null }} />
-      <Tabs.Screen name="settings/about" options={{ href: null }} />
+      <Tabs.Screen name="settings/profile/index" options={{ href: null }} />
+      <Tabs.Screen name="settings/about/index" options={{ href: null }} />
 
       {/* Métricas */}
       <Tabs.Screen

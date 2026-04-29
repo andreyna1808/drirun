@@ -1,9 +1,4 @@
-/**
- * settings.tsx
- * Tela de Configuracoes do DriRun.
- * Inclui: perfil, meta de dias, notificacoes, idioma, loja, sobre e zona de perigo.
- */
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -34,10 +29,8 @@ export default function SettingsScreen() {
   const [editingGoal, setEditingGoal] = useState(false);
   const [currentLang, setCurrentLang] = useState<SupportedLanguage>(i18n.language as SupportedLanguage);
 
-  // ── Atualizar meta de dias ─────────────────────────────────────────────────
   function handleGoalChange(text: string) {
-    const cleaned = text.replace(/[^0-9]/g, "");
-    setGoalDaysInput(cleaned);
+    setGoalDaysInput(text.replace(/[^0-9]/g, ""));
   }
 
   function handleGoalBlur() {
@@ -45,21 +38,25 @@ export default function SettingsScreen() {
     if (isNaN(value) || value < 1) value = 30;
     if (value > 365) {
       Alert.alert(
-        "Limite máximo",
-        "O máximo de dias para a meta é 365 (1 ano). Ajustando para 365.",
-        [{ text: "OK" }]
+        t("onboarding_goal_max_alert_title"),
+        t("onboarding_goal_max_alert_msg"),
+        [{ text: t("ok") }]
       );
       value = 365;
     }
     setGoalDaysInput(String(value));
     if (value !== state.goalDays) {
       Alert.alert(
-        "Alterar meta?",
-        `Deseja alterar sua meta para ${value} dias? O progresso atual será mantido.`,
+        t("settings_goal_change_title"),
+        t("settings_goal_change_msg", { value }),
         [
-          { text: "Cancelar", style: "cancel", onPress: () => setGoalDaysInput(String(state.goalDays)) },
           {
-            text: "Confirmar",
+            text: t("cancel"),
+            style: "cancel",
+            onPress: () => setGoalDaysInput(String(state.goalDays)),
+          },
+          {
+            text: t("confirm"),
             onPress: () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               dispatch({ type: "UPDATE_GOAL", payload: { goalDays: value } });
@@ -71,14 +68,12 @@ export default function SettingsScreen() {
     setEditingGoal(false);
   }
 
-  // ── Alterar idioma ─────────────────────────────────────────────────────────
   async function handleLanguageChange(lang: SupportedLanguage) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await changeLanguage(lang);
-    setCurrentLang(lang);                    // força a re-renderização com o novo idioma
-    console.log('Idioma alterado para:', lang); // agora mostra o valor correto
+    setCurrentLang(lang);
   }
-  // ── Configurar notificacoes ────────────────────────────────────────────────
+
   function handleToggleNotifications(enabled: boolean) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     dispatch({
@@ -93,20 +88,22 @@ export default function SettingsScreen() {
     if (!isNaN(hour) && hour >= 0 && hour <= 23) {
       dispatch({
         type: "UPDATE_NOTIFICATIONS",
-        payload: { enabled: state.notifications?.enabled ?? false, hour: cleaned.padStart(2, "0") },
+        payload: {
+          enabled: state.notifications?.enabled ?? false,
+          hour: cleaned.padStart(2, "0"),
+        },
       });
     }
   }
 
-  // ── Resetar dados ──────────────────────────────────────────────────────────
   function handleReset() {
     Alert.alert(
-      "Resetar tudo?",
-      "Isso apagará todos os seus dados, corridas e o pet. Essa ação não pode ser desfeita.",
+      t("settings_reset_confirm_title"),
+      t("settings_reset_confirm_msg"),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Resetar",
+          text: t("settings_reset_button"),
           style: "destructive",
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -119,7 +116,7 @@ export default function SettingsScreen() {
                 goalStartDate: null,
                 runs: [],
                 pet: {
-                  name: "Meu Pet",
+                  name: t("pet_default_name"),
                   state: "egg",
                   daysSinceLastRun: 0,
                   totalDaysCompleted: 0,
@@ -130,12 +127,11 @@ export default function SettingsScreen() {
                 notifications: { enabled: false, hour: null },
               },
             });
-            // Mensagem motivacional apos reset
             setTimeout(() => {
               Alert.alert(
-                "Novo começo! 🔥",
-                "Seja consistente agora! Cada dia é uma nova oportunidade de evoluir. Sua Fênix está esperando por você!",
-                [{ text: "Vamos lá! 💪" }]
+                t("settings_reset_success_title"),
+                t("settings_reset_success_msg"),
+                [{ text: t("settings_reset_success_button") }]
               );
             }, 500);
           },
@@ -144,19 +140,18 @@ export default function SettingsScreen() {
     );
   }
 
-  // ── Remover anuncios (IAP simulado) ───────────────────────────────────────
   function handleRemoveAds() {
     Alert.alert(
-      "Remover Anúncios",
-      "Remova os anúncios por R$ 9,90 (compra única).",
+      t("settings_remove_ads_title"),
+      t("settings_remove_ads_msg"),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Comprar",
+          text: t("settings_remove_ads_buy"),
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             dispatch({ type: "REMOVE_ADS" });
-            Alert.alert("Sucesso!", "Anúncios removidos. Obrigado pelo apoio! 🎉");
+            Alert.alert(t("success"), t("settings_remove_ads_success"));
           },
         },
       ]
@@ -175,38 +170,42 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>⚙️ Configurações</Text>
+        <Text style={styles.title}>{t("settings_title")}</Text>
 
         {/* ── Perfil ── */}
-        <SectionHeader title="Perfil" colors={colors} />
+        <SectionHeader title={t("settings_profile")} colors={colors} />
         <TouchableOpacity
           style={[styles.aboutButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push("/settings/profile");
+            router.push("/settings/profile" as any);
           }}
         >
           <Text style={styles.aboutEmoji}>👤</Text>
           <View style={{ flex: 1 }}>
             <Text style={[styles.aboutTitle, { color: colors.foreground }]}>
-              {state.profile?.name ?? "Atleta"}
+              {state.profile?.name ?? t("settings_athlete")}
             </Text>
             <Text style={[styles.aboutSubtitle, { color: colors.muted }]}>
               {state.profile
-                ? `${state.profile.age} anos • ${state.profile.weight}kg • ${state.profile.height}cm`
-                : "Toque para editar"}
+                ? `${state.profile.age} ${t("settings_years")} • ${state.profile.weight}kg • ${state.profile.height}cm`
+                : t("settings_tap_to_edit")}
             </Text>
           </View>
           <Text style={[styles.aboutArrow, { color: colors.muted }]}>›</Text>
         </TouchableOpacity>
 
         {/* ── Meta de Dias ── */}
-        <SectionHeader title="Meta de Dias" colors={colors} />
+        <SectionHeader title={t("settings_goal")} colors={colors} />
         <View style={styles.card}>
           <View style={styles.goalRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.goalLabel, { color: colors.foreground }]}>Dias da Meta</Text>
-              <Text style={[styles.goalHint, { color: colors.muted }]}>Mínimo: 1 dia • Máximo: 365 dias</Text>
+              <Text style={[styles.goalLabel, { color: colors.foreground }]}>
+                {t("settings_goal_days")}
+              </Text>
+              <Text style={[styles.goalHint, { color: colors.muted }]}>
+                {t("settings_goal_hint")}
+              </Text>
             </View>
             {editingGoal ? (
               <TextInput
@@ -230,7 +229,6 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             )}
           </View>
-          {/* Progresso */}
           <View style={styles.goalProgress}>
             <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
               <View
@@ -244,21 +242,21 @@ export default function SettingsScreen() {
               />
             </View>
             <Text style={[styles.goalProgressText, { color: colors.muted }]}>
-              {state.pet.totalDaysCompleted} / {state.goalDays} dias concluídos
+              {state.pet.totalDaysCompleted} / {state.goalDays} {t("settings_goal_completed")}
             </Text>
           </View>
         </View>
 
-        {/* ── Notificacoes ── */}
-        <SectionHeader title="Notificações" colors={colors} />
+        {/* ── Notificações ── */}
+        <SectionHeader title={t("settings_notifications")} colors={colors} />
         <View style={styles.card}>
           <View style={styles.notifRow}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.notifLabel, { color: colors.foreground }]}>
-                🔔 Lembrete diário
+                🔔 {t("settings_notifications_daily")}
               </Text>
               <Text style={[styles.notifHint, { color: colors.muted }]}>
-                {state.pet.name} vai te lembrar de correr!
+                {state.pet.name} {t("settings_notifications_pet_reminder")}
               </Text>
             </View>
             <Switch
@@ -270,7 +268,9 @@ export default function SettingsScreen() {
           </View>
           {notifEnabled && (
             <View style={[styles.notifHourRow, { borderTopColor: colors.border }]}>
-              <Text style={[styles.notifLabel, { color: colors.foreground }]}>⏰ Horário do lembrete</Text>
+              <Text style={[styles.notifLabel, { color: colors.foreground }]}>
+                ⏰ {t("settings_notifications_time")}
+              </Text>
               <View style={styles.notifHourInput}>
                 <TextInput
                   style={[styles.hourInput, { color: colors.foreground, borderColor: colors.border }]}
@@ -287,7 +287,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── Idioma ── */}
-        <SectionHeader title="Idioma / Language / Idioma" colors={colors} />
+        <SectionHeader title={t("settings_language")} colors={colors} />
         <View style={styles.card}>
           <View style={styles.langRow}>
             {SUPPORTED_LANGUAGES.map((lang) => (
@@ -303,10 +303,12 @@ export default function SettingsScreen() {
                 onPress={() => handleLanguageChange(lang.code)}
               >
                 <Text style={styles.langFlag}>{lang.flag}</Text>
-                <Text style={[
-                  styles.langLabel,
-                  { color: currentLang === lang.code ? "#FFFFFF" : colors.foreground },
-                ]}>
+                <Text
+                  style={[
+                    styles.langLabel,
+                    { color: currentLang === lang.code ? "#FFFFFF" : colors.foreground },
+                  ]}
+                >
                   {lang.label}
                 </Text>
               </TouchableOpacity>
@@ -315,64 +317,67 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── Loja ── */}
-        <SectionHeader title="Loja" colors={colors} />
+        <SectionHeader title={t("settings_shop")} colors={colors} />
         <View style={styles.card}>
-          {/* Remover anuncios */}
           {!state.hasRemovedAds ? (
             <TouchableOpacity style={styles.shopItem} onPress={handleRemoveAds}>
               <View style={styles.shopItemLeft}>
                 <Text style={styles.shopItemEmoji}>🚫</Text>
                 <View>
-                  <Text style={[styles.shopItemTitle, { color: colors.foreground }]}>Remover Anúncios</Text>
-                  <Text style={[styles.shopItemDesc, { color: colors.muted }]}>Experiência limpa e sem interrupções</Text>
+                  <Text style={[styles.shopItemTitle, { color: colors.foreground }]}>
+                    {t("settings_remove_ads")}
+                  </Text>
+                  <Text style={[styles.shopItemDesc, { color: colors.muted }]}>
+                    {t("settings_remove_ads_desc")}
+                  </Text>
                 </View>
               </View>
               <View style={[styles.shopItemPrice, { backgroundColor: colors.primary + "20" }]}>
-                <Text style={[styles.shopItemPriceText, { color: colors.primary }]}>R$ 9,90</Text>
+                <Text style={[styles.shopItemPriceText, { color: colors.primary }]}>
+                  {t("settings_remove_ads_price")}
+                </Text>
               </View>
             </TouchableOpacity>
           ) : (
             <View style={styles.shopItemDone}>
               <Text style={styles.shopItemEmoji}>✅</Text>
-              <Text style={[styles.shopItemDoneText, { color: colors.success }]}>Anúncios removidos</Text>
+              <Text style={[styles.shopItemDoneText, { color: colors.success }]}>
+                {t("settings_ads_removed")}
+              </Text>
             </View>
           )}
-          {/* <View style={[styles.divider, { backgroundColor: colors.border }]} /> */}
-          {/* Saldo e link para loja */}
-          {/* <View style={styles.gemsBalanceRow}>
-            <Text style={[styles.gemsBalance, { color: colors.foreground }]}>💎 {state.gems} gemas</Text>
-            <TouchableOpacity
-              style={[styles.goShopButton, { backgroundColor: colors.primary }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/shop"); }}
-            >
-              <Text style={styles.goShopText}>🛒 Pet Shop</Text>
-            </TouchableOpacity>
-          </View> */}
         </View>
 
         {/* ── Sobre ── */}
-        <SectionHeader title="Sobre" colors={colors} />
+        <SectionHeader title={t("settings_about")} colors={colors} />
         <TouchableOpacity
           style={[styles.aboutButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/settings/about"); }}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/settings/about" as any);
+          }}
         >
           <Text style={styles.aboutEmoji}>ℹ️</Text>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.aboutTitle, { color: colors.foreground }]}>Sobre o DriRun</Text>
+            <Text style={[styles.aboutTitle, { color: colors.foreground }]}>
+              {t("about_title")}
+            </Text>
             <Text style={[styles.aboutSubtitle, { color: colors.muted }]}>
-              Origem, vídeo motivacional, links e créditos
+              {t("settings_about_desc")}
             </Text>
           </View>
           <Text style={[styles.aboutArrow, { color: colors.muted }]}>›</Text>
         </TouchableOpacity>
 
         {/* ── Zona de Perigo ── */}
-        <SectionHeader title="⚠️ Zona de Perigo" colors={colors} />
+        <SectionHeader title={t("settings_danger_zone")} colors={colors} />
         <TouchableOpacity
           style={[styles.dangerButton, { backgroundColor: colors.error + "15", borderColor: colors.error }]}
           onPress={handleReset}
         >
-          <Text style={[styles.dangerButtonText, { color: colors.error }]}>🗑️ Resetar todos os dados</Text>
+          <Text style={[styles.dangerButtonText, { color: colors.error }]}>
+            🗑️ {t("settings_reset")}
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
@@ -381,8 +386,7 @@ export default function SettingsScreen() {
   );
 }
 
-// ── Componentes auxiliares ────────────────────────────────────────────────────
-
+// ── Componentes auxiliares (inalterados) ─────────────────────────────────────
 function SectionHeader({ title, colors }: { title: string; colors: any }) {
   return (
     <Text style={{
@@ -400,14 +404,7 @@ function SectionHeader({ title, colors }: { title: string; colors: any }) {
   );
 }
 
-function InfoRow({
-  label, value, colors, isLast = false,
-}: {
-  label: string;
-  value: string;
-  colors: any;
-  isLast?: boolean;
-}) {
+function InfoRow({ label, value, colors, isLast = false }: { label: string; value: string; colors: any; isLast?: boolean }) {
   return (
     <View style={{
       flexDirection: "row",
@@ -422,8 +419,7 @@ function InfoRow({
   );
 }
 
-// ── Estilos ───────────────────────────────────────────────────────────────────
-
+// ── Estilos (inalterados) ────────────────────────────────────────────────────
 function createStyles(colors: any) {
   return StyleSheet.create({
     scroll: { flex: 1 },
@@ -464,7 +460,6 @@ function createStyles(colors: any) {
     progressBarBg: { height: 6, borderRadius: 3, overflow: "hidden", marginBottom: 6 },
     progressBarFill: { height: "100%", borderRadius: 3 },
     goalProgressText: { fontSize: 12 },
-    // Notificacoes
     notifRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -491,7 +486,6 @@ function createStyles(colors: any) {
       textAlign: "center",
     },
     hourLabel: { fontSize: 14 },
-    // Idioma
     langRow: { flexDirection: "row", gap: 8, paddingVertical: 12 },
     langButton: {
       flex: 1,
@@ -503,7 +497,6 @@ function createStyles(colors: any) {
     },
     langFlag: { fontSize: 22 },
     langLabel: { fontSize: 11, fontWeight: "700" },
-    // Loja
     shopItem: {
       flexDirection: "row",
       alignItems: "center",
@@ -532,7 +525,6 @@ function createStyles(colors: any) {
       borderRadius: 12,
     },
     goShopText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
-    // Sobre
     aboutButton: {
       flexDirection: "row",
       alignItems: "center",
@@ -545,7 +537,6 @@ function createStyles(colors: any) {
     aboutTitle: { fontSize: 15, fontWeight: "700" },
     aboutSubtitle: { fontSize: 12, marginTop: 2 },
     aboutArrow: { fontSize: 22, fontWeight: "300" },
-    // Zona de perigo
     dangerButton: {
       padding: 16,
       borderRadius: 16,

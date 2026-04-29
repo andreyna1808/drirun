@@ -5,7 +5,6 @@ import { useApp } from "@/context/AppContext";
 
 export default function HomeScreen() {
     const { state, isLoading } = useApp();
-    console.log("OIEEEEEEEEEEEEEEEEEEEEEEE:", state);
 
     useEffect(() => {
         if (!isLoading) {
