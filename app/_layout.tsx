@@ -1,148 +1,90 @@
 import "@/global.css";
-import { AppProvider, useApp } from "@/context/AppContext";
-import { initI18n } from "@/lib/i18n";
-
-// Inicializa o i18n antes de renderizar o app (detecção automática de idioma)
-initI18n().catch(console.error);
+import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import "react-native-reanimated";
-import { Platform } from "react-native";
-import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
-import {
-  SafeAreaFrameContext,
-  SafeAreaInsetsContext,
-  SafeAreaProvider,
-  initialWindowMetrics,
-} from "react-native-safe-area-context";
-import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AppProvider, useApp } from "@/context/AppContext";
+import { ActivityIndicator, View, Text } from "react-native";
+import i18n, { initI18n } from "@/lib/i18n";
+import { I18nextProvider } from "react-i18next";
 
-import { trpc, createTRPCClient } from "@/lib/trpc";
-import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+const queryClient = new QueryClient();
 
-const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
-const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
+function RootNavigator() {
+  const { isLoading } = useApp();
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+        <Text style={{ marginTop: 10 }}>Carregando dados...</Text>
+      </View>
+    );
+  }
 
-/**
- * Gerencia o roteamento baseado no estado de onboarding do usuário.
- */
-function AppNavigator() {
-  const { state } = useApp();
+  // ⚠️ Todas as telas são declaradas SEMPRE, sem condições
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {!state.isOnboarded ? (
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      ) : (
-        <>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="tracking" options={{ presentation: "fullScreenModal" }} />
-          <Stack.Screen name="run-summary" options={{ presentation: "modal" }} />
-          <Stack.Screen name="celebration" options={{ presentation: "fullScreenModal" }} />
-          <Stack.Screen name="about" options={{ presentation: "modal" }} />
-          <Stack.Screen name="pet-shop" options={{ presentation: "modal" }} />
-        </>
-      )}
-      <Stack.Screen name="oauth/callback" />
-      <Stack.Screen name="+not-found" />
+      {/* Redirecionador raiz (app/index.tsx) */}
+      <Stack.Screen name="index" />
+      {/* Grupo de abas – contém a home real (home.tsx), bmi, etc. */}
+      <Stack.Screen name="(tabs)" />
+      {/* Onboarding */}
+      <Stack.Screen name="onboarding" />
+      {/* Modais e telas avulsas */}
+      <Stack.Screen name="tracking" options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="run-summary" options={{ presentation: "modal" }} />
+      <Stack.Screen name="celebration" options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="about" />
+      <Stack.Screen name="shop" />
+      <Stack.Screen name="pet-gallery" />
     </Stack>
   );
 }
 
 export default function RootLayout() {
-  const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
-  const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
-
-  const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
-  const [frame, setFrame] = useState<Rect>(initialFrame);
-
-  // Initialize Manus runtime for cookie injection from parent container
-  useEffect(() => {
-    initManusRuntime();
-  }, []);
-
-  const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
-    setInsets(metrics.insets);
-    setFrame(metrics.frame);
-  }, []);
+  const [i18nReady, setI18nReady] = useState(false);
+  const [i18nError, setI18nError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (Platform.OS !== "web") return;
-    const unsubscribe = subscribeSafeAreaInsets(handleSafeAreaUpdate);
-    return () => unsubscribe();
-  }, [handleSafeAreaUpdate]);
+    initI18n()
+      .then(() => setI18nReady(true))
+      .catch((e) => {
+        console.error("Erro ao inicializar i18n:", e);
+        setI18nError("Erro ao carregar configurações de idioma.");
+      });
+  }, []);
 
-  // Create clients once and reuse them
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            // Disable automatic refetching on window focus for mobile
-            refetchOnWindowFocus: false,
-            // Retry failed requests once
-            retry: 1,
-          },
-        },
-      }),
-  );
-  const [trpcClient] = useState(() => createTRPCClient());
-
-  // Ensure minimum 8px padding for top and bottom on mobile
-  const providerInitialMetrics = useMemo(() => {
-    const metrics = initialWindowMetrics ?? { insets: initialInsets, frame: initialFrame };
-    return {
-      ...metrics,
-      insets: {
-        ...metrics.insets,
-        top: Math.max(metrics.insets.top, 16),
-        bottom: Math.max(metrics.insets.bottom, 12),
-      },
-    };
-  }, [initialInsets, initialFrame]);
-
-  const content = (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
-          {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
-          {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
-          <AppProvider>
-            <AppNavigator />
-          </AppProvider>
-          <StatusBar style="auto" />
-        </QueryClientProvider>
-      </trpc.Provider>
-    </GestureHandlerRootView>
-  );
-
-  const shouldOverrideSafeArea = Platform.OS === "web";
-
-  if (shouldOverrideSafeArea) {
+  if (!i18nReady) {
     return (
-      <ThemeProvider>
-        <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-          <SafeAreaFrameContext.Provider value={frame}>
-            <SafeAreaInsetsContext.Provider value={insets}>
-              {content}
-            </SafeAreaInsetsContext.Provider>
-          </SafeAreaFrameContext.Provider>
-        </SafeAreaProvider>
-      </ThemeProvider>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        {i18nError ? (
+          <Text style={{ color: "red" }}>{i18nError}</Text>
+        ) : (
+          <ActivityIndicator size="large" />
+        )}
+        <Text style={{ marginTop: 10 }}>Carregando idioma...</Text>
+      </View>
     );
   }
 
   return (
-    <ThemeProvider>
-      <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider>
+            <SafeAreaProvider>
+              <AppProvider>
+                <RootNavigator />
+                <StatusBar style="auto" />
+              </AppProvider>
+            </SafeAreaProvider>
+          </ThemeProvider>
+        </I18nextProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

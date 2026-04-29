@@ -1,20 +1,15 @@
-/**
- * AppContext.tsx
- * Contexto global do DriRun — gerencia perfil, corridas, meta, pet, gemas e shop.
- * Todos os dados sao persistidos localmente via AsyncStorage.
- */
 import React, {
   createContext,
   useContext,
   useEffect,
   useReducer,
   useCallback,
+  useState,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// ── Tipos ─────────────────────────────────────────────────────────────────────
+// ── Tipos (mantidos) ──────────────────────────────────────────────────────────
 
-/** Perfil do usuario coletado no onboarding */
 export interface UserProfile {
   name: string;
   age: number;
@@ -23,60 +18,54 @@ export interface UserProfile {
   sex: "male" | "female" | "other";
 }
 
-/** Dados de uma corrida/caminhada concluida */
 export interface RunRecord {
   id: string;
-  date: string;       // ISO date string (YYYY-MM-DD)
-  duration: number;   // segundos
-  distance: number;   // metros
-  pace: number;       // segundos por km
-  calories: number;   // kcal estimadas
+  date: string;
+  duration: number;
+  distance: number;
+  pace: number;
+  calories: number;
   route: Array<{ latitude: number; longitude: number }>;
 }
 
-/** Estado do pet Fenix */
 export type PetState =
-  | "egg"        // ainda nao comecou a correr
-  | "hatchling"  // dias 1-7 concluidos
-  | "young"      // dias 8-20 concluidos
-  | "adult"      // dias 21-meta concluidos
-  | "free"       // meta completa — Fenix livre!
-  | "sad"        // 1-2 dias sem correr
-  | "depressed"  // 3-6 dias sem correr
-  | "dead"       // 7+ dias sem correr
-  | "reborn";    // acabou de renascer das cinzas
+  | "egg"
+  | "hatchling"
+  | "young"
+  | "adult"
+  | "free"
+  | "sad"
+  | "depressed"
+  | "dead"
+  | "reborn";
 
-/** Item da loja adquirido pelo usuario */
 export interface OwnedShopItem {
   id: string;
   equipped: boolean;
 }
 
-/** Dados do pet Fenix */
 export interface PetData {
   name: string;
   state: PetState;
-  daysSinceLastRun: number;    // dias sem correr
-  totalDaysCompleted: number;  // total de dias com corrida feita
-  ownedItems: OwnedShopItem[]; // itens comprados na loja
+  daysSinceLastRun: number;
+  totalDaysCompleted: number;
+  ownedItems: OwnedShopItem[];
 }
 
-/** Configuracoes de notificacao */
 export interface NotificationSettings {
   enabled: boolean;
-  hour: string | null; // "HH:MM" ou null
+  hour: string | null;
 }
 
-/** Estado global do app */
 export interface AppState {
   isOnboarded: boolean;
   profile: UserProfile | null;
-  goalDays: number;           // meta em dias (1-365)
+  goalDays: number;
   goalStartDate: string | null;
   runs: RunRecord[];
   pet: PetData;
   hasRemovedAds: boolean;
-  gems: number;               // moeda virtual
+  gems: number;
   notifications: NotificationSettings;
 }
 
@@ -107,14 +96,14 @@ const INITIAL_STATE: AppState = {
 type Action =
   | { type: "LOAD_STATE"; payload: AppState }
   | {
-      type: "COMPLETE_ONBOARDING";
-      payload: {
-        profile: UserProfile;
-        goalDays: number;
-        notificationsEnabled: boolean;
-        notificationHour: string | null;
-      };
-    }
+    type: "COMPLETE_ONBOARDING";
+    payload: {
+      profile: UserProfile;
+      goalDays: number;
+      notificationsEnabled: boolean;
+      notificationHour: string | null;
+    };
+  }
   | { type: "ADD_RUN"; payload: RunRecord }
   | { type: "UPDATE_PET"; payload: Partial<PetData> }
   | { type: "RENAME_PET"; payload: string }
@@ -131,12 +120,17 @@ type Action =
 // ── Reducer ───────────────────────────────────────────────────────────────────
 
 function appReducer(state: AppState, action: Action): AppState {
+  console.log("[Reducer] Action:", action.type);
   switch (action.type) {
     case "LOAD_STATE":
-      // Garante compatibilidade com versoes antigas do estado salvo
       return {
         ...INITIAL_STATE,
         ...action.payload,
+        isOnboarded: action.payload.isOnboarded ?? false,
+        profile: action.payload.profile ?? null,
+        goalDays: action.payload.goalDays ?? INITIAL_STATE.goalDays,
+        goalStartDate: action.payload.goalStartDate ?? null,
+        runs: action.payload.runs ?? [],
         pet: {
           ...DEFAULT_PET,
           ...(action.payload.pet ?? {}),
@@ -146,6 +140,18 @@ function appReducer(state: AppState, action: Action): AppState {
       };
 
     case "COMPLETE_ONBOARDING":
+      console.log("[Reducer] Onboarding concluído!");
+      console.log({
+        ...state,
+        isOnboarded: true,
+        profile: action.payload.profile,
+        goalDays: action.payload.goalDays,
+        goalStartDate: new Date().toISOString().split("T")[0],
+        notifications: {
+          enabled: action.payload.notificationsEnabled,
+          hour: action.payload.notificationHour,
+        },
+      })
       return {
         ...state,
         isOnboarded: true,
@@ -160,7 +166,6 @@ function appReducer(state: AppState, action: Action): AppState {
 
     case "ADD_RUN": {
       const newRuns = [...state.runs, action.payload];
-      // Recalcula o estado do pet apos adicionar corrida
       const newPet = calculatePetState(
         {
           ...state.pet,
@@ -179,7 +184,6 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, pet: { ...state.pet, name: action.payload } };
 
     case "BUY_SHOP_ITEM": {
-      // Verifica se tem gemas suficientes e adiciona o item
       if (state.gems < action.payload.cost) return state;
       const alreadyOwned = state.pet.ownedItems.some((i) => i.id === action.payload.itemId);
       if (alreadyOwned) return state;
@@ -193,8 +197,7 @@ function appReducer(state: AppState, action: Action): AppState {
       };
     }
 
-    case "EQUIP_SHOP_ITEM": {
-      // Equipa ou desequipa um item do pet
+    case "EQUIP_SHOP_ITEM":
       return {
         ...state,
         pet: {
@@ -206,7 +209,6 @@ function appReducer(state: AppState, action: Action): AppState {
           ),
         },
       };
-    }
 
     case "REMOVE_ADS":
       return { ...state, hasRemovedAds: true };
@@ -227,7 +229,6 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, notifications: action.payload };
 
     case "RESET_ALL":
-      // Reseta todo o progresso mas mantem o perfil e idioma
       return {
         ...INITIAL_STATE,
         isOnboarded: true,
@@ -240,49 +241,36 @@ function appReducer(state: AppState, action: Action): AppState {
   }
 }
 
-// ── Logica do Pet ─────────────────────────────────────────────────────────────
+// ── Lógica do Pet ─────────────────────────────────────────────────────────────
 
-/**
- * Calcula o estado visual da Fenix baseado nos dias concluidos e dias sem correr.
- * Esta e a unica funcao que determina o estado do pet — nao pode ser burlada.
- */
 export function calculatePetState(pet: PetData, goalDays: number): PetData {
   const { daysSinceLastRun, totalDaysCompleted } = pet;
 
-  // Se o pet estava morto e voltou a correr, ele renasce
-  if (pet.state === "dead" && daysSinceLastRun === 0) {
-    return { ...pet, state: "reborn" };
-  }
-
-  // Estados de tristeza/morte por inatividade
   if (daysSinceLastRun >= 7) return { ...pet, state: "dead" };
   if (daysSinceLastRun >= 3) return { ...pet, state: "depressed" };
   if (daysSinceLastRun >= 1) return { ...pet, state: "sad" };
 
-  // Meta completa — Fenix livre!
-  if (totalDaysCompleted >= goalDays) return { ...pet, state: "free" };
+  if (pet.state === "dead" && daysSinceLastRun === 0) {
+    return { ...pet, state: "reborn" };
+  }
 
-  // Evolucao por dias concluidos
-  if (totalDaysCompleted >= 21) return { ...pet, state: "adult" };
-  if (totalDaysCompleted >= 8)  return { ...pet, state: "young" };
-  if (totalDaysCompleted >= 1)  return { ...pet, state: "hatchling" };
+  if (totalDaysCompleted >= goalDays) return { ...pet, state: "adult" };
+  if (totalDaysCompleted >= 8) return { ...pet, state: "young" };
+  if (totalDaysCompleted >= 1) return { ...pet, state: "hatchling" };
 
   return { ...pet, state: "egg" };
 }
 
-/** Verifica se o usuario ja correu hoje */
 export function hasRunToday(runs: RunRecord[]): boolean {
   const today = new Date().toISOString().split("T")[0];
   return runs.some((r) => r.date === today);
 }
 
-/** Retorna a corrida de hoje, se existir */
 export function getTodayRun(runs: RunRecord[]): RunRecord | null {
   const today = new Date().toISOString().split("T")[0];
   return runs.find((r) => r.date === today) ?? null;
 }
 
-/** Calcula quantos dias consecutivos sem correr */
 export function calculateDaysSinceLastRun(runs: RunRecord[]): number {
   if (runs.length === 0) return 0;
   const today = new Date();
@@ -300,6 +288,7 @@ const STORAGE_KEY = "@drirun:state";
 
 interface AppContextValue {
   state: AppState;
+  isLoading: boolean;
   dispatch: React.Dispatch<Action>;
   saveState: (newState: AppState) => Promise<void>;
   refreshPetState: () => void;
@@ -309,35 +298,60 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, INITIAL_STATE);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Carrega o estado salvo ao iniciar o app
+  const saveStateToStorage = useCallback(async (stateToSave: AppState) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      console.log("[AppContext] Estado salvo. isOnboarded:", stateToSave.isOnboarded);
+    } catch (e) {
+      console.error("[AppContext] Erro ao salvar estado:", e);
+    }
+  }, []);
+
+  // Carrega o estado salvo
   useEffect(() => {
     (async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
+
         if (stored) {
-          const parsed: AppState = JSON.parse(stored);
-          dispatch({ type: "LOAD_STATE", payload: parsed });
+          const parsed: AppState = JSON.parse(stored || "null");
+          console.log("[AppContext] Dados parseados. isOnboarded:", parsed.isOnboarded, "profile:", !!parsed.profile);
+
+          // Só considera válido se o onboarding foi concluído e o perfil existe
+          if (parsed.isOnboarded && parsed.profile) {
+            console.log("[AppContext] Estado válido, carregando...");
+            dispatch({ type: "LOAD_STATE", payload: parsed });
+          } else {
+            console.log("[AppContext] Estado inválido ou incompleto, resetando para INITIAL_STATE.");
+            // Se existiam dados mas não são válidos, sobrescreve com o estado inicial
+            saveStateToStorage(INITIAL_STATE);
+            dispatch({ type: "LOAD_STATE", payload: INITIAL_STATE });
+          }
+        } else {
+          // Nenhum dado salvo → persiste o estado inicial
+          console.log("[AppContext] Nenhum estado salvo. Persistindo INITIAL_STATE.");
+          saveStateToStorage(INITIAL_STATE);
+          dispatch({ type: "LOAD_STATE", payload: INITIAL_STATE });
         }
       } catch (e) {
-        console.error("Erro ao carregar estado:", e);
+        console.error("[AppContext] Erro ao carregar estado:", e);
+        saveStateToStorage(INITIAL_STATE);
+        dispatch({ type: "LOAD_STATE", payload: INITIAL_STATE });
+      } finally {
+        setIsLoading(false);
       }
     })();
   }, []);
 
-  // Persiste o estado sempre que ele mudar
+  // Persiste sempre que o estado muda (após carregamento inicial)
   useEffect(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch((e) =>
-      console.error("Erro ao salvar estado:", e)
-    );
-  }, [state]);
+    if (!isLoading) {
+      saveStateToStorage(state);
+    }
+  }, [state, isLoading, saveStateToStorage]);
 
-  /** Salva manualmente (util apos operacoes criticas) */
-  const saveState = useCallback(async (newState: AppState) => {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-  }, []);
-
-  /** Atualiza o estado do pet baseado em quantos dias se passaram sem correr */
   const refreshPetState = useCallback(() => {
     const daysSince = calculateDaysSinceLastRun(state.runs);
     const updatedPet = calculatePetState(
@@ -350,13 +364,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [state.runs, state.pet, state.goalDays]);
 
   return (
-    <AppContext.Provider value={{ state, dispatch, saveState, refreshPetState }}>
+    <AppContext.Provider
+      value={{ state, dispatch, saveState: saveStateToStorage, refreshPetState, isLoading }}
+    >
       {children}
     </AppContext.Provider>
   );
 }
 
-/** Hook para acessar o contexto do app */
 export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error("useApp must be used within AppProvider");

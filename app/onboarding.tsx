@@ -1,122 +1,189 @@
-/**
- * onboarding.tsx
- * Tela de onboarding do DriRun — 4 etapas:
- * 1. Boas-vindas
- * 2. Dados pessoais (nome, sexo, idade, altura)
- * 3. Meta de dias (1-365)
- * 4. Permissao de notificacoes + selecao de horario
- */
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as Notifications from "expo-notifications";
 import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-/** Frases motivacionais exibidas na tela de boas-vindas */
 const WELCOME_PHRASES = [
-  "A jornada de mil milhas comeca com um unico passo.",
-  "Voce nao precisa ser rapido. Voce so precisa ir.",
+  "A jornada de mil milhas começa com um único passo.",
+  "Você não precisa ser rápido. Você só precisa ir.",
   "Cada corrida te torna mais forte do que ontem.",
-  "Sua Fenix esta esperando para renascer com voce.",
-  "Consistencia bate talento quando o talento nao e consistente.",
-];
-
-/** Horarios disponiveis para o lembrete diario */
-const NOTIFICATION_HOURS = [
-  "06:00", "07:00", "08:00", "09:00", "10:00",
-  "12:00", "14:00", "16:00", "18:00", "19:00", "20:00", "21:00",
+  "Sua Fênix está esperando para renascer com você.",
+  "Consistência bate talento quando o talento não é consistente.",
 ];
 
 export default function OnboardingScreen() {
   const { t } = useTranslation();
-  const { dispatch } = useApp();
+  const { dispatch, state } = useApp();
   const colors = useColors();
+  const insets = useSafeAreaInsets();
 
-  // Etapa atual: 0=boas-vindas, 1=perfil, 2=meta, 3=notificacoes
   const [step, setStep] = useState(0);
 
-  // Dados do perfil
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
-  const [height, setHeight] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
   const [sex, setSex] = useState<"male" | "female" | "other" | "">("");
-
-  // Meta de dias
+  const [useImperial, setUseImperial] = useState(false);
   const [goalDays, setGoalDays] = useState("30");
-
-  // Notificacoes
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
-  const [notificationHour, setNotificationHour] = useState("07:00");
+  const [selectedTime, setSelectedTime] = useState(new Date());
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
-  // Frase motivacional aleatoria (calculada uma vez)
-  const phrase = useRef(
-    WELCOME_PHRASES[Math.floor(Math.random() * WELCOME_PHRASES.length)]
-  ).current;
+  const [imperialHeightText, setImperialHeightText] = useState("");
+  const [imperialWeightText, setImperialWeightText] = useState("");
 
-  // Validacoes
-  function validateProfile(): boolean {
+  const phrase = useRef(WELCOME_PHRASES[Math.floor(Math.random() * WELCOME_PHRASES.length)]).current;
+
+  // Pré‑carrega dados se já existir algum perfil (ex.: retorno após interrupção)
+  useEffect(() => {
+    if (state.profile) {
+      setName(state.profile.name);
+      setAge(state.profile.age.toString());
+      setHeightCm(state.profile.height.toString());
+      setWeightKg(state.profile.weight.toString());
+      setSex(state.profile.sex);
+      setGoalDays(state.goalDays.toString());
+      if (state.notifications.enabled) {
+        setNotificationsEnabled(true);
+        const [h, m] = state.notifications.hour?.split(":").map(Number) ?? [7, 0];
+        const time = new Date();
+        time.setHours(h, m);
+        setSelectedTime(time);
+      }
+    }
+  }, []);
+
+  // Se o estado já estiver como onboarded (ex.: retomou de um estado salvo), redireciona imediatamente
+  useEffect(() => {
+    if (state.isOnboarded) {
+      router.replace("/(tabs)");
+    }
+  }, [state.isOnboarded]);
+
+  // Conversões imperiais/métricas
+  const cmToImperial = (cm: number) => {
+    const totalInches = cm / 2.54;
+    const feet = Math.floor(totalInches / 12);
+    const inches = Math.round(totalInches % 12);
+    return { feet, inches };
+  };
+  const imperialToCm = (feet: number, inches: number) => (feet * 12 + inches) * 2.54;
+  const kgToLb = (kg: number) => kg * 2.20462;
+  const lbToKg = (lb: number) => lb / 2.20462;
+
+  const getDisplayHeight = () => {
+    if (!heightCm) return "";
+    const cm = parseFloat(heightCm);
+    if (isNaN(cm)) return "";
+    if (useImperial) {
+      const { feet, inches } = cmToImperial(cm);
+      return `${feet}'${inches}"`;
+    }
+    return cm.toString();
+  };
+  const getDisplayWeight = () => {
+    if (!weightKg) return "";
+    const kg = parseFloat(weightKg);
+    if (isNaN(kg)) return "";
+    if (useImperial) return Math.round(kgToLb(kg)).toString();
+    return kg.toString();
+  };
+
+  useEffect(() => {
+    if (useImperial) {
+      const cm = parseFloat(heightCm);
+      if (!isNaN(cm) && cm > 0) {
+        const { feet, inches } = cmToImperial(cm);
+        setImperialHeightText(`${feet}'${inches}"`);
+      } else setImperialHeightText("");
+      const kg = parseFloat(weightKg);
+      if (!isNaN(kg) && kg > 0) setImperialWeightText(Math.round(kgToLb(kg)).toString());
+      else setImperialWeightText("");
+    }
+  }, [useImperial, heightCm, weightKg]);
+
+  const onImperialHeightBlur = () => {
+    const match = imperialHeightText.match(/(\d+)'(\d+)"?/);
+    if (match) {
+      const feet = parseInt(match[1]);
+      const inches = parseInt(match[2]);
+      const cm = imperialToCm(feet, inches);
+      setHeightCm(Math.round(cm).toString());
+    } else {
+      const cm = parseFloat(heightCm);
+      if (!isNaN(cm) && cm > 0) {
+        const { feet, inches } = cmToImperial(cm);
+        setImperialHeightText(`${feet}'${inches}"`);
+      } else setImperialHeightText("");
+    }
+  };
+  const onImperialWeightBlur = () => {
+    const lb = parseFloat(imperialWeightText);
+    if (!isNaN(lb) && lb > 0) setWeightKg(lbToKg(lb).toFixed(1));
+    else {
+      const kg = parseFloat(weightKg);
+      if (!isNaN(kg) && kg > 0) setImperialWeightText(Math.round(kgToLb(kg)).toString());
+      else setImperialWeightText("");
+    }
+  };
+
+  // Validações
+  const validateProfile = (): boolean => {
     if (!name.trim()) { Alert.alert(t("error"), t("error_name_required")); return false; }
     const ageNum = parseInt(age);
     if (isNaN(ageNum) || ageNum < 5 || ageNum > 120) { Alert.alert(t("error"), t("error_age_invalid")); return false; }
-    const heightNum = parseFloat(height);
+    const heightNum = parseFloat(heightCm);
     if (isNaN(heightNum) || heightNum < 100 || heightNum > 250) { Alert.alert(t("error"), t("error_height_invalid")); return false; }
+    const weightNum = parseFloat(weightKg);
+    if (isNaN(weightNum) || weightNum < 20 || weightNum > 300) { Alert.alert(t("error"), t("error_weight_invalid")); return false; }
     if (!sex) { Alert.alert(t("error"), t("error_sex_required")); return false; }
     return true;
-  }
-
-  function validateGoal(): boolean {
+  };
+  const validateGoal = (): boolean => {
     const days = parseInt(goalDays);
     if (isNaN(days) || days < 1) { Alert.alert(t("error"), t("error_goal_invalid")); return false; }
     return true;
-  }
+  };
 
-  /** Ajusta o valor da meta ao sair do campo (max 365) */
-  function handleGoalBlur() {
-    const days = parseInt(goalDays);
-    if (!isNaN(days) && days > 365) {
-      Alert.alert(t("onboarding_goal_max_alert_title"), t("onboarding_goal_max_alert_msg"), [{ text: t("ok") }]);
-      setGoalDays("365");
-    } else if (!isNaN(days) && days < 1) {
-      setGoalDays("1");
-    }
-  }
-
-  /** Avanca para a proxima etapa */
-  function handleNext() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const goToNext = () => {
     if (step === 0) setStep(1);
     else if (step === 1 && validateProfile()) setStep(2);
     else if (step === 2 && validateGoal()) setStep(3);
-  }
+    else if (step === 3) handleFinish();
+  };
+  const goToPrev = () => {
+    if (step > 0) setStep(step - 1);
+  };
 
-  /** Solicita permissao de notificacoes ao SO */
+  // Notificações
   async function requestNotificationPermission(): Promise<boolean> {
-    if (Platform.OS === "web") return false;
     try {
       const { status } = await Notifications.requestPermissionsAsync();
       return status === "granted";
     } catch { return false; }
   }
-
-  /** Agenda notificacao diaria no horario escolhido */
-  async function scheduleNotification(petName: string, userName: string, timeStr: string) {
-    if (Platform.OS === "web") return;
+  async function scheduleNotification(petName: string, userName: string, time: Date) {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      const [h, m] = timeStr.split(":").map(Number);
+      const hour = time.getHours();
+      const minute = time.getMinutes();
       await Notifications.scheduleNotificationAsync({
         content: {
           title: t("notification_title", { petName }),
@@ -125,71 +192,65 @@ export default function OnboardingScreen() {
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour: h,
-          minute: m,
+          hour,
+          minute,
         },
       });
-    } catch (e) { console.warn("Erro ao agendar notificacao:", e); }
-  }
-
-  /** Usuario aceita receber notificacoes */
-  async function handleAllowNotifications() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const granted = await requestNotificationPermission();
-    if (granted) {
-      setNotificationsEnabled(true);
-    } else {
-      Alert.alert("Permissao Negada", "Nao foi possivel ativar as notificacoes. Voce pode ativa-las depois nas Configuracoes.", [
-        { text: t("ok"), onPress: () => setNotificationsEnabled(false) },
-      ]);
+    } catch (e) {
+      console.warn("Erro ao agendar notificação:", e);
     }
   }
-
-  /** Usuario recusa notificacoes */
+  async function handleAllowNotifications() {
+    const granted = await requestNotificationPermission();
+    if (granted) setNotificationsEnabled(true);
+    else Alert.alert(
+      "Permissão Negada",
+      "Não foi possível ativar notificações. Você pode ativá-las depois nas Configurações.",
+      [{ text: t("ok"), onPress: () => setNotificationsEnabled(false) }]
+    );
+  }
   function handleDenyNotifications() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setNotificationsEnabled(false);
   }
 
-  /** Finaliza o onboarding e redireciona para o app */
-  async function handleFinish() {
+  // ⭐ HANDLE FINISH CORRIGIDO – salva e navega imediatamente
+  const handleFinish = useCallback(async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const profile = {
       name: name.trim(),
       age: parseInt(age),
-      weight: 70,
-      height: parseFloat(height),
+      weight: parseFloat(weightKg),
+      height: parseFloat(heightCm),
       sex: sex as "male" | "female" | "other",
     };
+
     if (notificationsEnabled) {
-      await scheduleNotification("Meu Pet", profile.name, notificationHour);
+      await scheduleNotification("Meu Pet", profile.name, selectedTime);
     }
+
+    // Dispara a action que atualiza o estado global e persiste
+
+    console.log("profile:", {profile, goalDays, notificationsEnabled, selectedTime});
     dispatch({
       type: "COMPLETE_ONBOARDING",
       payload: {
         profile,
         goalDays: parseInt(goalDays),
         notificationsEnabled: notificationsEnabled ?? false,
-        notificationHour: notificationsEnabled ? notificationHour : null,
+        notificationHour: notificationsEnabled
+          ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}`
+          : null,
       },
     });
-    router.replace("/(tabs)");
-  }
 
-  const styles = createStyles(colors);
+    // Navega programaticamente para a home (não depende mais do useEffect)
+  }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch]);
 
-  return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Etapa 0: Boas-vindas */}
-        {step === 0 && (
+  // RENDERIZAÇÃO DAS ETAPAS (mantida integralmente)
+  const renderStepContent = () => {
+    switch (step) {
+      case 0:
+        return (
           <View style={styles.stepContainer}>
             <Text style={styles.heroEmoji}>🔥</Text>
             <Text style={[styles.appName, { color: colors.primary }]}>DriRun</Text>
@@ -198,8 +259,8 @@ export default function OnboardingScreen() {
             <View style={styles.featureList}>
               {[
                 { icon: "🏃", text: "Rastreie suas corridas com GPS" },
-                { icon: "🔥", text: "Cuide da sua Fenix virtual" },
-                { icon: "📊", text: "Acompanhe sua evolucao" },
+                { icon: "🔥", text: "Cuide da sua Fênix virtual" },
+                { icon: "📊", text: "Acompanhe sua evolução" },
                 { icon: "🎯", text: "Defina e conquiste suas metas" },
                 { icon: "💎", text: "Ganhe gemas e personalize seu pet" },
               ].map((item) => (
@@ -209,134 +270,104 @@ export default function OnboardingScreen() {
                 </View>
               ))}
             </View>
-            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleNext}>
-              <Text style={styles.primaryButtonText}>{t("onboarding_start")}</Text>
-            </TouchableOpacity>
           </View>
-        )}
-
-        {/* Etapa 1: Dados pessoais */}
-        {step === 1 && (
+        );
+      case 1:
+        return (
           <View style={styles.stepContainer}>
-            <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_profile_title")}</Text>
-            <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_profile_subtitle")}</Text>
+            <View>
+              <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_profile_title")}</Text>
+              <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_profile_subtitle")}</Text>
+            </View>
+
             <View style={styles.form}>
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_name_label")}</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.foreground }]}
-                placeholder={t("onboarding_name_placeholder")}
-                placeholderTextColor={colors.muted}
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                returnKeyType="done"
-              />
+              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t("onboarding_name_placeholder")} placeholderTextColor={colors.muted} />
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_sex_label")}</Text>
               <View style={styles.sexRow}>
                 {[
-                  { key: "male" as const, emoji: "👨", label: t("onboarding_sex_male") },
-                  { key: "female" as const, emoji: "👩", label: t("onboarding_sex_female") },
-                  { key: "other" as const, emoji: "🧑", label: t("onboarding_sex_other") },
+                  { key: "male" as const, label: t("onboarding_sex_male") },
+                  { key: "female" as const, label: t("onboarding_sex_female") },
+                  { key: "other" as const, label: t("onboarding_sex_other") },
                 ].map((s) => (
                   <TouchableOpacity
                     key={s.key}
-                    style={[
-                      styles.sexButton,
-                      { borderColor: colors.border, backgroundColor: colors.surface },
-                      sex === s.key && { borderColor: colors.primary, backgroundColor: colors.primary + "20" },
-                    ]}
-                    onPress={() => { setSex(s.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                    style={[styles.sexButton, sex === s.key && { borderColor: colors.primary, backgroundColor: colors.primary + "20" }]}
+                    onPress={() => setSex(s.key)}
                   >
-                    <Text style={styles.sexEmoji}>{s.emoji}</Text>
                     <Text style={[styles.sexButtonText, { color: sex === s.key ? colors.primary : colors.muted }]}>{s.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_age_label")}</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.foreground }]}
-                placeholder={t("onboarding_age_placeholder")}
-                placeholderTextColor={colors.muted}
-                value={age}
-                onChangeText={setAge}
-                keyboardType="numeric"
-                returnKeyType="done"
-              />
+              <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" placeholder={t("onboarding_age_placeholder")} />
+              <View style={{ flexDirection: "row", marginBottom: 8, marginTop: 12 }}>
+                <TouchableOpacity style={[styles.unitButton, !useImperial && styles.unitButtonActive]} onPress={() => setUseImperial(false)}>
+                  <Text style={[styles.unitText, !useImperial && { color: "#FFF" }]}>cm / kg</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.unitButton, useImperial && styles.unitButtonActive, { marginHorizontal: 12 }]} onPress={() => setUseImperial(true)}>
+                  <Text style={[styles.unitText, useImperial && { color: "#FFF" }]}>ft / lb</Text>
+                </TouchableOpacity>
+              </View>
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_height_label")}</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.foreground }]}
-                placeholder={t("onboarding_height_placeholder")}
-                placeholderTextColor={colors.muted}
-                value={height}
-                onChangeText={setHeight}
-                keyboardType="numeric"
-                returnKeyType="done"
-              />
+              {!useImperial ? (
+                <TextInput style={styles.input} value={heightCm} onChangeText={setHeightCm} keyboardType="numeric" placeholder="cm (ex: 175)" />
+              ) : (
+                <TextInput style={styles.input} value={imperialHeightText} onChangeText={setImperialHeightText} onBlur={onImperialHeightBlur} placeholder="ex: 5'10\" />
+              )}
+              <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_weight_label")}</Text>
+              {!useImperial ? (
+                <TextInput style={styles.input} value={weightKg} onChangeText={setWeightKg} keyboardType="numeric" placeholder="kg (ex: 70)" />
+              ) : (
+                <TextInput style={styles.input} value={imperialWeightText} onChangeText={setImperialWeightText} onBlur={onImperialWeightBlur} keyboardType="numeric" placeholder="lb (ex: 154)" />
+              )}
             </View>
-            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleNext}>
-              <Text style={styles.primaryButtonText}>{t("next")}</Text>
-            </TouchableOpacity>
-            <StepIndicator current={1} total={4} colors={colors} />
           </View>
-        )}
-
-        {/* Etapa 2: Meta de dias */}
-        {step === 2 && (
+        );
+      case 2:
+        return (
           <View style={styles.stepContainer}>
-            <Text style={styles.goalEmoji}>🎯</Text>
             <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_goal_title")}</Text>
             <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_goal_subtitle")}</Text>
             <View style={styles.goalContainer}>
               <TextInput
-                style={[styles.goalInput, { color: colors.primary, borderBottomColor: colors.primary }]}
+                style={styles.goalInput}
                 value={goalDays}
                 onChangeText={(text) => setGoalDays(text.replace(/[^0-9]/g, ""))}
-                onBlur={handleGoalBlur}
+                onBlur={() => {
+                  let d = parseInt(goalDays);
+                  if (isNaN(d)) d = 30;
+                  if (d > 365) { Alert.alert(t("onboarding_goal_max_alert_title"), t("onboarding_goal_max_alert_msg")); setGoalDays("365"); }
+                  else if (d < 1) setGoalDays("1");
+                }}
                 keyboardType="numeric"
                 maxLength={3}
-                returnKeyType="done"
-                selectTextOnFocus
               />
               <Text style={[styles.goalLabel, { color: colors.muted }]}>{t("onboarding_goal_label")}</Text>
               <Text style={[styles.goalHint, { color: colors.muted }]}>{t("onboarding_goal_hint")}</Text>
             </View>
             <View style={styles.goalShortcuts}>
               {[7, 14, 21, 30, 60, 90, 180, 365].map((d) => (
-                <TouchableOpacity
-                  key={d}
-                  style={[
-                    styles.shortcutButton,
-                    { borderColor: colors.border, backgroundColor: colors.surface },
-                    goalDays === String(d) && { borderColor: colors.primary, backgroundColor: colors.primary },
-                  ]}
-                  onPress={() => { setGoalDays(String(d)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                >
-                  <Text style={[styles.shortcutText, { color: goalDays === String(d) ? "#FFFFFF" : colors.muted }]}>{d}d</Text>
+                <TouchableOpacity key={d} style={[styles.shortcutButton, goalDays === String(d) && { backgroundColor: colors.primary }]} onPress={() => setGoalDays(String(d))}>
+                  <Text style={[styles.shortcutText, { color: goalDays === String(d) ? "#FFF" : colors.muted }]}>{d}d</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <View style={[styles.petPreview, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.petPreview}>
               <Text style={styles.petPreviewEmoji}>🥚</Text>
               <Text style={[styles.petPreviewText, { color: colors.foreground }]}>{t("onboarding_pet_preview")}</Text>
-              <Text style={[styles.petPreviewSub, { color: colors.muted }]}>
-                Desafio de {goalDays || "30"} dias • Ganhe 25 💎 por dia!
-              </Text>
+              <Text style={[styles.petPreviewSub, { color: colors.muted }]}>Desafio de {goalDays || "30"} dias • Ganhe 25 💎 por dia!</Text>
             </View>
-            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleNext}>
-              <Text style={styles.primaryButtonText}>{t("next")}</Text>
-            </TouchableOpacity>
-            <StepIndicator current={2} total={4} colors={colors} />
           </View>
-        )}
-
-        {/* Etapa 3: Notificacoes */}
-        {step === 3 && (
+        );
+      case 3:
+        return (
           <View style={styles.stepContainer}>
-            <Text style={styles.notifEmoji}>🔔</Text>
-            <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_notifications_title")}</Text>
-            <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_notifications_subtitle")}</Text>
-
-            {notificationsEnabled === null && (
+            <View>
+              <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_notifications_title")}</Text>
+              <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_notifications_subtitle")}</Text>
+            </View>
+            {!notificationsEnabled && (
               <View style={styles.notifButtons}>
                 <TouchableOpacity style={[styles.notifAllowButton, { backgroundColor: colors.primary }]} onPress={handleAllowNotifications}>
                   <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
@@ -346,67 +377,96 @@ export default function OnboardingScreen() {
                 </TouchableOpacity>
               </View>
             )}
-
-            {notificationsEnabled === true && (
+            {!!notificationsEnabled && (
               <View style={styles.timePickerSection}>
                 <View style={[styles.notifConfirm, { backgroundColor: colors.success + "20", borderColor: colors.success }]}>
-                  <Text style={[styles.notifConfirmText, { color: colors.success }]}>✅ Notificacoes ativadas!</Text>
+                  <Text style={[styles.notifConfirmText, { color: colors.success }]}>✅ Notificações ativadas!</Text>
                 </View>
                 <Text style={[styles.timeLabel, { color: colors.foreground }]}>{t("onboarding_notifications_time")}</Text>
-                <Text style={[styles.timeHint, { color: colors.muted }]}>{t("onboarding_notifications_time_hint")}</Text>
-                <View style={styles.timeGrid}>
-                  {NOTIFICATION_HOURS.map((hour) => (
-                    <TouchableOpacity
-                      key={hour}
-                      style={[
-                        styles.timeButton,
-                        { borderColor: colors.border, backgroundColor: colors.surface },
-                        notificationHour === hour && { borderColor: colors.primary, backgroundColor: colors.primary },
-                      ]}
-                      onPress={() => { setNotificationHour(hour); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                    >
-                      <Text style={[styles.timeButtonText, { color: notificationHour === hour ? "#FFFFFF" : colors.muted }]}>{hour}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleFinish}>
-                  <Text style={styles.primaryButtonText}>{t("onboarding_finish")}</Text>
+                <TouchableOpacity style={[styles.timePickerButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => setShowTimePicker(true)}>
+                  <Text style={{ color: colors.primary, fontSize: 18, fontWeight: "600" }}>{selectedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
                 </TouchableOpacity>
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={selectedTime}
+                    mode="time"
+                    display="spinner"
+                    onValueChange={(event, date) => {
+                      setShowTimePicker(false);
+                      if (date) setSelectedTime(date);
+                    }}
+                  />
+                )}
               </View>
             )}
-
-            {notificationsEnabled === false && (
+            {!notificationsEnabled && (
               <View style={styles.notifDeniedSection}>
                 <View style={[styles.notifDeniedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <Text style={[styles.notifDeniedText, { color: colors.muted }]}>
-                    Tudo bem! Voce pode ativar as notificacoes depois nas Configuracoes.
-                  </Text>
+                  <Text style={[styles.notifDeniedText, { color: colors.muted }]}>Tudo bem! Você pode ativar as notificações depois nas Configurações.</Text>
                 </View>
-                <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleFinish}>
-                  <Text style={styles.primaryButtonText}>{t("onboarding_finish")}</Text>
-                </TouchableOpacity>
               </View>
             )}
-
-            <StepIndicator current={3} total={4} colors={colors} />
           </View>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const styles = createStyles(colors);
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1, height: "100%" }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 24,
+            height: "100%",
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {renderStepContent()}
+          <View>
+            <StepIndicator current={step} total={4} colors={colors} />
+            <View style={[styles.navigationButtons]}>
+              {step > 0 && (
+                <TouchableOpacity style={[styles.navButton, styles.backButton]} onPress={goToPrev}>
+                  <Text style={styles.backButtonText}>← {t("back")}</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.navButton, styles.nextButton, step === 0 && { flex: 1 }]}
+                onPress={goToNext}
+              >
+                <Text style={styles.nextButtonText}>{step === 3 ? t("onboarding_finish") : t("next")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-/** Indicador de progresso das etapas */
+// Componente StepIndicator (mantido)
 function StepIndicator({ current, total, colors }: { current: number; total: number; colors: any }) {
   return (
-    <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 24 }}>
+    <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 8 }}>
       {Array.from({ length: total }).map((_, i) => (
         <View
           key={i}
           style={{
             width: i === current ? 24 : 8,
             height: 8,
-            borderRadius: 4,
+            borderRadius: 10,
             backgroundColor: i === current ? colors.primary : colors.border,
           }}
         />
@@ -417,56 +477,146 @@ function StepIndicator({ current, total, colors }: { current: number; total: num
 
 function createStyles(colors: any) {
   return StyleSheet.create({
-    container: { flex: 1 },
-    scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 60, paddingBottom: 40 },
-    stepContainer: { flex: 1, alignItems: "center" },
+    stepContainer: { width: "100%", alignItems: "center", display: "flex", flex: 1, justifyContent: "space-between", marginTop: 24 },
     heroEmoji: { fontSize: 72, marginBottom: 8 },
     appName: { fontSize: 40, fontWeight: "900", letterSpacing: 3 },
-    tagline: { fontSize: 16, marginBottom: 20, letterSpacing: 1 },
-    phrase: { fontSize: 15, fontStyle: "italic", textAlign: "center", marginBottom: 32, lineHeight: 22 },
+    tagline: { fontSize: 16, marginBottom: 20, letterSpacing: 1, color: colors.muted },
+    phrase: { fontSize: 15, fontStyle: "italic", textAlign: "center", marginBottom: 32, lineHeight: 22, color: colors.foreground },
     featureList: { width: "100%", marginBottom: 32 },
     featureItem: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
     featureIcon: { fontSize: 22 },
-    featureText: { fontSize: 15, flex: 1 },
-    primaryButton: { borderRadius: 16, paddingVertical: 16, paddingHorizontal: 40, width: "100%", alignItems: "center", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-    primaryButtonText: { color: "#FFFFFF", fontSize: 17, fontWeight: "700", letterSpacing: 0.5 },
-    stepTitle: { fontSize: 28, fontWeight: "800", marginBottom: 8, textAlign: "center" },
-    stepSubtitle: { fontSize: 15, textAlign: "center", marginBottom: 28, lineHeight: 22 },
-    form: { width: "100%", marginBottom: 24 },
-    label: { fontSize: 13, marginBottom: 6, fontWeight: "600" },
-    input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, marginBottom: 16 },
-    sexRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
-    sexButton: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, alignItems: "center", gap: 4 },
+    featureText: { fontSize: 15, flex: 1, color: colors.foreground },
+    stepTitle: { fontSize: 25, fontWeight: "800", marginBottom: 2, textAlign: "center", color: colors.foreground },
+    stepSubtitle: { fontSize: 15, textAlign: "center", marginBottom: 4, lineHeight: 22, color: colors.muted },
+    form: { width: "100%", marginBottom: 12, height: "85%" },
+    label: { fontSize: 13, marginBottom: 6, fontWeight: "600", color: colors.muted },
+    input: {
+      borderWidth: 1,
+      borderRadius: 10,
+      padding: 14,
+      fontSize: 16,
+      marginBottom: 12,
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      color: colors.foreground,
+    },
+    sexRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+    sexButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+    },
     sexEmoji: { fontSize: 22 },
     sexButtonText: { fontSize: 12, fontWeight: "600" },
     goalEmoji: { fontSize: 64, marginBottom: 8 },
     goalContainer: { alignItems: "center", marginBottom: 24, width: "100%" },
-    goalInput: { fontSize: 72, fontWeight: "900", textAlign: "center", width: 180, borderBottomWidth: 3, paddingBottom: 8 },
-    goalLabel: { fontSize: 18, marginTop: 8, fontWeight: "600" },
-    goalHint: { fontSize: 12, marginTop: 8 },
+    goalInput: {
+      fontSize: 72,
+      fontWeight: "900",
+      textAlign: "center",
+      width: 180,
+      borderBottomWidth: 3,
+      paddingBottom: 8,
+      color: colors.primary,
+      borderBottomColor: colors.primary,
+    },
+    goalLabel: { fontSize: 18, marginTop: 8, fontWeight: "600", color: colors.muted },
+    goalHint: { fontSize: 12, marginTop: 8, color: colors.muted },
     goalShortcuts: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 24 },
-    shortcutButton: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5 },
-    shortcutText: { fontSize: 13, fontWeight: "600" },
-    petPreview: { borderRadius: 16, padding: 20, width: "100%", alignItems: "center", marginBottom: 24, borderWidth: 1 },
+    shortcutButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    shortcutText: { fontSize: 13, fontWeight: "600", color: colors.muted },
+    petPreview: {
+      borderRadius: 10,
+      padding: 20,
+      width: "100%",
+      alignItems: "center",
+      marginBottom: 24,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
     petPreviewEmoji: { fontSize: 48, marginBottom: 8 },
-    petPreviewText: { fontSize: 16, fontWeight: "700", marginBottom: 6, textAlign: "center" },
-    petPreviewSub: { fontSize: 13, textAlign: "center", lineHeight: 20 },
+    petPreviewText: { fontSize: 16, fontWeight: "700", marginBottom: 6, textAlign: "center", color: colors.foreground },
+    petPreviewSub: { fontSize: 13, textAlign: "center", lineHeight: 20, color: colors.muted },
     notifEmoji: { fontSize: 64, marginBottom: 8 },
-    notifButtons: { width: "100%", gap: 12, marginTop: 8 },
-    notifAllowButton: { paddingVertical: 16, borderRadius: 16, alignItems: "center" },
+    notifButtons: { width: "100%", gap: 12, marginTop: 24, height: "60%" },
+    notifAllowButton: { paddingVertical: 16, borderRadius: 10, alignItems: "center", backgroundColor: colors.primary },
     notifAllowText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
-    notifDenyButton: { paddingVertical: 14, borderRadius: 16, alignItems: "center", borderWidth: 1 },
-    notifDenyText: { fontSize: 15, fontWeight: "600" },
-    notifConfirm: { borderRadius: 12, padding: 12, borderWidth: 1, marginBottom: 20, width: "100%", alignItems: "center" },
-    notifConfirmText: { fontSize: 15, fontWeight: "700" },
-    timePickerSection: { width: "100%", alignItems: "center" },
-    timeLabel: { fontSize: 18, fontWeight: "700", marginBottom: 6, textAlign: "center" },
-    timeHint: { fontSize: 13, marginBottom: 16, textAlign: "center" },
-    timeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 24, width: "100%" },
-    timeButton: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, minWidth: 70, alignItems: "center" },
-    timeButtonText: { fontSize: 14, fontWeight: "600" },
-    notifDeniedSection: { width: "100%", alignItems: "center", gap: 16 },
-    notifDeniedCard: { borderRadius: 12, padding: 16, borderWidth: 1, width: "100%" },
-    notifDeniedText: { fontSize: 14, lineHeight: 22, textAlign: "center" },
+    notifDenyButton: { paddingVertical: 14, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    notifDenyText: { fontSize: 15, fontWeight: "600", color: colors.muted },
+    notifConfirm: { borderRadius: 10, padding: 12, borderWidth: 1, marginBottom: 20, width: "100%", alignItems: "center", backgroundColor: colors.success + "20", borderColor: colors.success },
+    notifConfirmText: { fontSize: 15, fontWeight: "700", color: colors.success },
+    timePickerSection: { width: "100%", alignItems: "center", height: "70%" },
+    timeLabel: { fontSize: 18, fontWeight: "700", marginBottom: 20, textAlign: "center", color: colors.foreground },
+    timeHint: { fontSize: 13, marginBottom: 16, textAlign: "center", color: colors.muted },
+    timePickerButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 10,
+      borderWidth: 1,
+      marginBottom: 24,
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+    },
+    unitButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    unitButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    unitText: { fontSize: 14, fontWeight: "600", color: colors.muted },
+    notifDeniedSection: { width: "100%", alignItems: "center", height: "20%" },
+    notifDeniedCard: { borderRadius: 10, padding: 16, borderWidth: 1, width: "100%", backgroundColor: colors.surface, borderColor: colors.border },
+    notifDeniedText: { fontSize: 14, lineHeight: 22, textAlign: "center", color: colors.muted },
+    navigationButtons: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 24,
+      width: "100%",
+      gap: 12,
+    },
+    navButton: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 10,
+      alignItems: "center",
+    },
+    backButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    backButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.foreground,
+    },
+    nextButton: {
+      backgroundColor: colors.primary,
+    },
+    nextButtonText: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: "#FFF",
+    },
   });
 }

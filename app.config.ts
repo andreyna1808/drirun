@@ -1,142 +1,70 @@
-// Load environment variables with proper priority (system > .env)
-import "./scripts/load-env.js";
 import type { ExpoConfig } from "expo/config";
 
-// Bundle ID format: space.manus.<project_name_dots>.<timestamp>
-// e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
-// Bundle ID can only contain letters, numbers, and dots
-// Android requires each dot-separated segment to start with a letter
-const rawBundleId = "space.manus.drirun.t20260428142419";
-const bundleId =
-  rawBundleId
-    .replace(/[-_]/g, ".") // Replace hyphens/underscores with dots
-    .replace(/[^a-zA-Z0-9.]/g, "") // Remove invalid chars
-    .replace(/\.+/g, ".") // Collapse consecutive dots
-    .replace(/^\.+|\.+$/g, "") // Trim leading/trailing dots
-    .toLowerCase()
-    .split(".")
-    .map((segment) => {
-      // Android requires each segment to start with a letter
-      // Prefix with 'x' if segment starts with a digit
-      return /^[a-zA-Z]/.test(segment) ? segment : "x" + segment;
-    })
-    .join(".") || "space.manus.app";
-// Extract timestamp from bundle ID and prefix with "manus" for deep link scheme
-// e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
-const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
-const schemeFromBundleId = `manus${timestamp}`;
-
-const env = {
-  // App branding - update these values directly (do not use env vars)
-  appName: "DriRun",
-  appSlug: "drirun",
-  // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
-  // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663604546551/HeDEJ8BKWD5L3uvpdx8WzV/icon-Gbc3NpgeryAVv6WfLkpH8j.png",
-  scheme: schemeFromBundleId,
-  iosBundleId: bundleId,
-  androidPackage: bundleId,
-};
-
 const config: ExpoConfig = {
-  name: env.appName,
-  slug: env.appSlug,
+  name: "Dri GoRun?!",
+  slug: "drirun",
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
-  scheme: env.scheme,
+
+  // ─────────────────────────────────────────────────────────────
+  // ÍCONE EXTERNO (visível na tela inicial do celular, gaveta de apps, etc.)
+  // É a imagem principal do aplicativo (launcher icon).
+  // Deve ser um PNG de pelo menos 512x512 (o Expo redimensiona automaticamente).
+  // ─────────────────────────────────────────────────────────────
+  icon: "./assets/images/logo.png",
+
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
+
   ios: {
-    supportsTablet: true,
-    bundleIdentifier: env.iosBundleId,
-    "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "DriRun precisa da sua localização para rastrear sua corrida e calcular a distância percorrida.",
-        "NSLocationAlwaysUsageDescription": "DriRun usa sua localização para rastrear corridas em segundo plano."
-      }
+    bundleIdentifier: "com.drirun.app",
+    infoPlist: {
+      NSLocationWhenInUseUsageDescription:
+        "DriRun precisa da sua localização para rastrear sua corrida.",
+    },
   },
+
   android: {
     adaptiveIcon: {
+      // Ícone adaptativo do Android (usado em versões mais recentes)
+      // O foregroundImage geralmente é a mesma imagem do ícone principal.
+      foregroundImage: "./assets/images/logo.png",
       backgroundColor: "#E6F4FE",
-      foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundImage: "./assets/images/android-icon-background.png",
-      monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
-    edgeToEdgeEnabled: true,
-    predictiveBackGestureEnabled: false,
-    package: env.androidPackage,
+    package: "com.drirun.app",
     permissions: [
       "POST_NOTIFICATIONS",
       "ACCESS_FINE_LOCATION",
       "ACCESS_COARSE_LOCATION",
-      "ACCESS_BACKGROUND_LOCATION",
-    ],
-    intentFilters: [
-      {
-        action: "VIEW",
-        autoVerify: true,
-        data: [
-          {
-            scheme: env.scheme,
-            host: "*",
-          },
-        ],
-        category: ["BROWSABLE", "DEFAULT"],
-      },
     ],
   },
-  web: {
-    bundler: "metro",
-    output: "static",
-    favicon: "./assets/images/favicon.png",
-  },
+
   plugins: [
     "expo-router",
-    [
-      "expo-audio",
-      {
-        microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
-      },
-    ],
-    [
-      "expo-video",
-      {
-        supportsBackgroundPlayback: true,
-        supportsPictureInPicture: true,
-      },
-    ],
+
+    // ─────────────────────────────────────────────────────────────
+    // SPLASH SCREEN (tela interna que aparece enquanto o app carrega)
+    // A imagem definida aqui é exibida centralizada com fundo colorido.
+    // Não é o ícone do app! É uma tela temporária de abertura.
+    // ─────────────────────────────────────────────────────────────
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/splash-icon.png",
-        imageWidth: 200,
-        resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        image: "./assets/images/icon.png",   // imagem central da splash screen (pode ser a mesma ou diferente)
+        imageWidth: 200,                    // largura em pixels (redimensionada)
+        resizeMode: "contain",              // "contain" mantém proporção sem cortar
+        backgroundColor: "#E6F4FE",         // cor de fundo da splash
         dark: {
-          backgroundColor: "#000000",
+          backgroundColor: "#04112d",       // fundo escuro (modo noturno)
         },
       },
     ],
-    [
-      "expo-location",
-      {
-        locationAlwaysAndWhenInUsePermission: "DriRun precisa da sua localização para rastrear corridas."
-      }
-    ],
-    [
-      "expo-build-properties",
-      {
-        android: {
-          buildArchs: ["armeabi-v7a", "arm64-v8a"],
-          minSdkVersion: 24,
-        },
-      },
-    ],
+
+    "expo-location",
+    "expo-notifications",
   ],
+
   experiments: {
     typedRoutes: true,
-    reactCompiler: true,
   },
 };
 

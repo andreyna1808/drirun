@@ -65,9 +65,11 @@ function formatPace(paceSecondsPerKm: number): string {
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 
-export default function HomeScreen() {
+export default function LoggedHomeScreen() {
   const { state, refreshPetState } = useApp();
   const colors = useColors();
+
+  console.log('OIEEEEEEEEEEEEE:::  ', state)
 
   const alreadyRan = hasRunToday(state.runs);
   const todayRun = getTodayRun(state.runs);
@@ -90,6 +92,7 @@ export default function HomeScreen() {
 
   function handleStartRun() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log("SOUUUU UM TESTEEEEEEEEEEEEEE")
     router.push("/tracking" as any);
   }
 

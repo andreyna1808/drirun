@@ -1,8 +1,3 @@
-/**
- * _layout.tsx (Tabs Layout)
- * Configuracao das abas de navegacao do DriRun.
- * 5 abas: Home, Metricas, Calendario (com IMC), Pet, Configuracoes
- */
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Platform, View } from "react-native";
@@ -20,6 +15,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
@@ -39,7 +35,7 @@ export default function TabLayout() {
         },
       }}
     >
-      {/* ── Home ── */}
+      {/* Home (agora home.tsx) */}
       <Tabs.Screen
         name="index"
         options={{
@@ -50,7 +46,9 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ── Métricas ── */}
+      {/* <Tabs.Screen name="index" options={{ href: null }} /> */}
+
+      {/* Métricas */}
       <Tabs.Screen
         name="metrics"
         options={{
@@ -61,7 +59,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ── Calendário (inclui IMC) ── */}
+      {/* Calendário (inclui IMC) */}
       <Tabs.Screen
         name="calendar"
         options={{
@@ -72,7 +70,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* ── Pet ── */}
+      {/* Pet */}
       <Tabs.Screen
         name="pet"
         options={{
@@ -80,35 +78,38 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <View style={{ position: "relative" }}>
               <IconSymbol size={26} name="pawprint.fill" color={color} />
-              {/* Badge de alerta se o pet estiver em perigo */}
               {(state.pet.state === "sad" || state.pet.state === "depressed") && (
-                <View style={{
-                  position: "absolute",
-                  top: -2,
-                  right: -4,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: "#F59E0B",
-                }} />
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -2,
+                    right: -4,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: "#F59E0B",
+                  }}
+                />
               )}
               {(state.pet.state as string) === "dead" && (
-                <View style={{
-                  position: "absolute",
-                  top: -2,
-                  right: -4,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: "#EF4444",
-                }} />
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -2,
+                    right: -4,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: "#EF4444",
+                  }}
+                />
               )}
             </View>
           ),
         }}
       />
 
-      {/* ── Configurações ── */}
+      {/* Configurações */}
       <Tabs.Screen
         name="settings"
         options={{
@@ -119,11 +120,11 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Aba IMC oculta — conteudo integrado ao Calendario */}
+      {/* Aba IMC oculta — conteúdo integrado ao Calendário */}
       <Tabs.Screen
         name="bmi"
         options={{
-          href: null, // oculta da tab bar
+          href: null,
         }}
       />
     </Tabs>

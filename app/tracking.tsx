@@ -1,28 +1,14 @@
-/**
- * tracking.tsx
- * Tela de rastreamento de corrida/caminhada em tempo real.
- * Usa GPS para mapear a rota, calcular distância, pace e kcal.
- * Funciona como o Strava — o usuário não pode burlar o check do dia
- * sem realmente iniciar e finalizar uma atividade.
- */
-
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Platform,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
-import { MapFallback } from "@/components/MapViewWrapper";
-
-// Importação condicional para evitar erro no web
-const MapView = Platform.OS !== "web" ? require("react-native-maps").default : null;
-const Polyline = Platform.OS !== "web" ? require("react-native-maps").Polyline : null;
-const Marker = Platform.OS !== "web" ? require("react-native-maps").Marker : null;
-const PROVIDER_DEFAULT = Platform.OS !== "web" ? require("react-native-maps").PROVIDER_DEFAULT : null;
+import MapView, { Polyline, Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { useKeepAwake } from "expo-keep-awake";
 import * as Haptics from "expo-haptics";
@@ -52,8 +38,8 @@ function haversineDistance(
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -97,7 +83,9 @@ export default function TrackingScreen() {
 
   const { state, dispatch } = useApp();
   const colors = useColors();
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<MapView>(null);
+
+  console.log("OIEEEEEEEEEEEEEEEEEEEEEEEEE:", state);
 
   // ── Estado da corrida ──────────────────────────────────────────────────────
   const [isRunning, setIsRunning] = useState(false);
@@ -244,27 +232,6 @@ export default function TrackingScreen() {
 
   // ── Finalizar corrida ──────────────────────────────────────────────────────
 
-  const finishRun = useCallback(() => {
-    // Distância mínima de 100m para validar a corrida
-    if (distanceRef.current < 100) {
-      Alert.alert(
-        "Corrida muito curta",
-        "Você precisa percorrer pelo menos 100 metros para registrar a atividade.",
-        [{ text: "Continuar correndo" }, { text: "Cancelar", onPress: cancelRun, style: "destructive" }]
-      );
-      return;
-    }
-
-    Alert.alert(
-      "Finalizar corrida?",
-      `Distância: ${(distanceRef.current / 1000).toFixed(2)} km`,
-      [
-        { text: "Continuar", style: "cancel" },
-        { text: "Finalizar", onPress: confirmFinish },
-      ]
-    );
-  }, []);
-
   const confirmFinish = useCallback(() => {
     // Para o timer e a subscrição de localização
     if (timerRef.current) clearInterval(timerRef.current);
@@ -308,303 +275,189 @@ export default function TrackingScreen() {
     router.back();
   }, []);
 
+  const finishRun = useCallback(() => {
+    // Distância mínima de 100m para validar a corrida
+    if (distanceRef.current < 100) {
+      Alert.alert(
+        "Corrida muito curta",
+        "Você precisa percorrer pelo menos 100 metros para registrar a atividade.",
+        [{ text: "Continuar correndo" }, { text: "Cancelar", onPress: cancelRun, style: "destructive" }]
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Finalizar corrida?",
+      `Distância: ${(distanceRef.current / 1000).toFixed(2)} km`,
+      [
+        { text: "Continuar", style: "cancel" },
+        { text: "Finalizar", onPress: confirmFinish },
+      ]
+    );
+  }, [cancelRun, confirmFinish]);
+
   // ── Métricas calculadas ────────────────────────────────────────────────────
 
-  const distanceKm = distance / 1000;
-  const paceSecondsPerKm = distance > 0 ? (duration / distanceKm) : 0;
-  const weightKg = state.profile?.weight ?? 70;
-  const calories = estimateCalories(weightKg, duration);
-
-  const styles = createStyles(colors);
-
-  // ── Render ─────────────────────────────────────────────────────────────────
+  const currentPace = distance > 0 ? duration / (distance / 1000) : 0;
+  const formattedPace = formatPace(currentPace);
+  const formattedDuration = formatDuration(duration);
+  const formattedDistance = (distance / 1000).toFixed(2);
 
   return (
-    <View style={styles.container}>
-      {/* ── Mapa ── */}
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        showsUserLocation
-        showsMyLocationButton={false}
-        followsUserLocation={isRunning && !isPaused}
-        initialRegion={
-          currentLocation
-            ? {
-                ...currentLocation,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
-              }
-            : {
-                latitude: -5.795,
-                longitude: -35.209,
-                latitudeDelta: 0.05,
-                longitudeDelta: 0.05,
-              }
-        }
-      >
-        {/* Rota percorrida como polyline laranja */}
-        {route.length > 1 && (
-          <Polyline
-            coordinates={route}
-            strokeColor={colors.primary}
-            strokeWidth={4}
-          />
-        )}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {locationError && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{locationError}</Text>
+        </View>
+      )}
 
-        {/* Marcador de início (verde) */}
-        {route.length > 0 && (
-          <Marker
-            coordinate={route[0]}
-            title="Início"
-            pinColor="green"
-          />
-        )}
-      </MapView>
+      {hasPermission && currentLocation ? (
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={{
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }}
+          showsUserLocation
+          followsUserLocation
+          loadingEnabled
+        >
+          {route.length > 1 && (
+            <Polyline
+              coordinates={route}
+              strokeWidth={5}
+              strokeColor={colors.primary}
+            />
+          )}
+          {currentLocation && (
+            <Marker coordinate={currentLocation} />
+          )}
+        </MapView>
+      ) : (
+        <View style={styles.mapPlaceholder}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.mapPlaceholderText, { color: colors.muted }]}>Aguardando localização...</Text>
+        </View>
+      )}
 
-      {/* ── Header com botão de fechar ── */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={cancelRun}>
-          <Text style={styles.closeButtonText}>✕</Text>
-        </TouchableOpacity>
-        {isPaused && (
-          <View style={styles.pausedBadge}>
-            <Text style={styles.pausedBadgeText}>PAUSADO</Text>
-          </View>
-        )}
+      <View style={[styles.metricsContainer, { backgroundColor: colors.card }]}>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: colors.foreground }]}>{formattedDistance}</Text>
+          <Text style={[styles.metricLabel, { color: colors.muted }]}>KM</Text>
+        </View>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: colors.foreground }]}>{formattedDuration}</Text>
+          <Text style={[styles.metricLabel, { color: colors.muted }]}>Tempo</Text>
+        </View>
+        <View style={styles.metricItem}>
+          <Text style={[styles.metricValue, { color: colors.foreground }]}>{formattedPace}</Text>
+          <Text style={[styles.metricLabel, { color: colors.muted }]}>Pace</Text>
+        </View>
       </View>
 
-      {/* ── HUD de métricas (sobreposto ao mapa) ── */}
-      <View style={styles.hud}>
-        {/* Tempo */}
-        <View style={styles.hudMain}>
-          <Text style={styles.hudMainValue}>{formatDuration(duration)}</Text>
-          <Text style={styles.hudMainLabel}>Tempo</Text>
-        </View>
-
-        {/* Distância e Pace */}
-        <View style={styles.hudRow}>
-          <View style={styles.hudItem}>
-            <Text style={styles.hudValue}>{distanceKm.toFixed(2)}</Text>
-            <Text style={styles.hudLabel}>km</Text>
-          </View>
-          <View style={styles.hudDivider} />
-          <View style={styles.hudItem}>
-            <Text style={styles.hudValue}>{formatPace(paceSecondsPerKm)}</Text>
-            <Text style={styles.hudLabel}>Pace</Text>
-          </View>
-          <View style={styles.hudDivider} />
-          <View style={styles.hudItem}>
-            <Text style={styles.hudValue}>{calories}</Text>
-            <Text style={styles.hudLabel}>kcal</Text>
-          </View>
-        </View>
-
-        {/* Botões de controle */}
-        <View style={styles.controls}>
-          {!isRunning ? (
-            /* Botão de iniciar */
-            <TouchableOpacity
-              style={[styles.startButton, !hasPermission && styles.buttonDisabled]}
-              onPress={startRun}
-              disabled={!hasPermission}
-            >
-              <Text style={styles.startButtonText}>
-                {locationError ? "Sem GPS" : "INICIAR"}
-              </Text>
+      <View style={styles.controlsContainer}>
+        {!isRunning ? (
+          <TouchableOpacity style={[styles.controlButton, styles.startButton, { backgroundColor: colors.primary }]} onPress={startRun}>
+            <Text style={styles.controlButtonText}>INICIAR</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.runningControls}>
+            <TouchableOpacity style={[styles.controlButton, styles.pauseButton, { backgroundColor: colors.accent }]} onPress={togglePause}>
+              <Text style={styles.controlButtonText}>{isPaused ? "RETOMAR" : "PAUSAR"}</Text>
             </TouchableOpacity>
-          ) : (
-            /* Botões de pausar e finalizar */
-            <View style={styles.runningControls}>
-              <TouchableOpacity style={styles.pauseButton} onPress={togglePause}>
-                <Text style={styles.pauseButtonText}>
-                  {isPaused ? "▶" : "⏸"}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.stopButton} onPress={finishRun}>
-                <Text style={styles.stopButtonText}>FINALIZAR</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Mensagem de erro de localização */}
-        {locationError && (
-          <Text style={styles.errorText}>{locationError}</Text>
+            <TouchableOpacity style={[styles.controlButton, styles.finishButton, { backgroundColor: colors.error }]} onPress={finishRun}>
+              <Text style={styles.controlButtonText}>FINALIZAR</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </View>
   );
 }
 
-// ─── Estilos ─────────────────────────────────────────────────────────────────
-
-function createStyles(colors: any) {
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    map: {
-      width,
-      height: height * 0.55,
-    },
-    header: {
-      position: "absolute",
-      top: 56,
-      left: 16,
-      right: 16,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    closeButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    closeButtonText: {
-      color: "#FFFFFF",
-      fontSize: 16,
-      fontWeight: "700",
-    },
-    pausedBadge: {
-      backgroundColor: colors.warning,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 12,
-    },
-    pausedBadgeText: {
-      color: "#FFFFFF",
-      fontSize: 12,
-      fontWeight: "700",
-      letterSpacing: 1,
-    },
-    hud: {
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      marginTop: -24,
-      paddingTop: 24,
-      paddingHorizontal: 24,
-      paddingBottom: 40,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 8,
-    },
-    hudMain: {
-      alignItems: "center",
-      marginBottom: 20,
-    },
-    hudMainValue: {
-      fontSize: 56,
-      fontWeight: "800",
-      color: colors.foreground,
-      letterSpacing: -2,
-    },
-    hudMainLabel: {
-      fontSize: 14,
-      color: colors.muted,
-      fontWeight: "600",
-      letterSpacing: 1,
-      textTransform: "uppercase",
-    },
-    hudRow: {
-      flexDirection: "row",
-      justifyContent: "space-around",
-      alignItems: "center",
-      backgroundColor: colors.background,
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 24,
-    },
-    hudItem: {
-      alignItems: "center",
-      flex: 1,
-    },
-    hudValue: {
-      fontSize: 20,
-      fontWeight: "700",
-      color: colors.foreground,
-    },
-    hudLabel: {
-      fontSize: 12,
-      color: colors.muted,
-      marginTop: 2,
-    },
-    hudDivider: {
-      width: 1,
-      height: 32,
-      backgroundColor: colors.border,
-    },
-    controls: {
-      alignItems: "center",
-    },
-    startButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 40,
-      paddingVertical: 20,
-      paddingHorizontal: 60,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.4,
-      shadowRadius: 12,
-      elevation: 8,
-    },
-    buttonDisabled: {
-      opacity: 0.5,
-    },
-    startButtonText: {
-      color: "#FFFFFF",
-      fontSize: 20,
-      fontWeight: "800",
-      letterSpacing: 2,
-    },
-    runningControls: {
-      flexDirection: "row",
-      gap: 16,
-      alignItems: "center",
-    },
-    pauseButton: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: colors.warning,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    pauseButtonText: {
-      fontSize: 24,
-    },
-    stopButton: {
-      backgroundColor: colors.error,
-      borderRadius: 40,
-      paddingVertical: 18,
-      paddingHorizontal: 48,
-      shadowColor: colors.error,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 6,
-    },
-    stopButtonText: {
-      color: "#FFFFFF",
-      fontSize: 18,
-      fontWeight: "800",
-      letterSpacing: 1,
-    },
-    errorText: {
-      color: colors.error,
-      fontSize: 13,
-      textAlign: "center",
-      marginTop: 12,
-    },
-  });
-}
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  errorContainer: {
+    padding: 10,
+    backgroundColor: "red",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  map: {
+    width: "100%",
+    height: height * 0.6,
+  },
+  mapPlaceholder: {
+    width: "100%",
+    height: height * 0.6,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#e0e0e0",
+  },
+  mapPlaceholderText: {
+    marginTop: 10,
+  },
+  metricsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  metricItem: {
+    alignItems: "center",
+  },
+  metricValue: {
+    fontSize: 28,
+    fontWeight: "bold",
+  },
+  metricLabel: {
+    fontSize: 14,
+    marginTop: 5,
+  },
+  controlsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  controlButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  controlButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  startButton: {
+    // backgroundColor: colors.primary, // Cor definida no componente
+  },
+  runningControls: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+  },
+  pauseButton: {
+    flex: 1,
+    marginRight: 10,
+    // backgroundColor: colors.accent,
+  },
+  finishButton: {
+    flex: 1,
+    marginLeft: 10,
+    // backgroundColor: colors.danger,
+  },
+});
