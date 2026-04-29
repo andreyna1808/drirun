@@ -1,3 +1,4 @@
+import 'dotenv/config';                      // <-- necessário para ler .env
 import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
@@ -5,14 +6,7 @@ const config: ExpoConfig = {
   slug: "drirun",
   version: "1.0.0",
   orientation: "portrait",
-
-  // ─────────────────────────────────────────────────────────────
-  // ÍCONE EXTERNO (visível na tela inicial do celular, gaveta de apps, etc.)
-  // É a imagem principal do aplicativo (launcher icon).
-  // Deve ser um PNG de pelo menos 512x512 (o Expo redimensiona automaticamente).
-  // ─────────────────────────────────────────────────────────────
   icon: "./assets/images/logo.png",
-
   userInterfaceStyle: "automatic",
 
   ios: {
@@ -25,8 +19,6 @@ const config: ExpoConfig = {
 
   android: {
     adaptiveIcon: {
-      // Ícone adaptativo do Android (usado em versões mais recentes)
-      // O foregroundImage geralmente é a mesma imagem do ícone principal.
       foregroundImage: "./assets/images/logo.png",
       backgroundColor: "#E6F4FE",
     },
@@ -36,29 +28,28 @@ const config: ExpoConfig = {
       "ACCESS_FINE_LOCATION",
       "ACCESS_COARSE_LOCATION",
     ],
+
+    config: {
+      googleMaps: {
+        apiKey: process.env.GOOGLE_MAPS_API_KEY,
+      },
+    },
   },
 
   plugins: [
     "expo-router",
-
-    // ─────────────────────────────────────────────────────────────
-    // SPLASH SCREEN (tela interna que aparece enquanto o app carrega)
-    // A imagem definida aqui é exibida centralizada com fundo colorido.
-    // Não é o ícone do app! É uma tela temporária de abertura.
-    // ─────────────────────────────────────────────────────────────
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/icon.png",   // imagem central da splash screen (pode ser a mesma ou diferente)
-        imageWidth: 200,                    // largura em pixels (redimensionada)
-        resizeMode: "contain",              // "contain" mantém proporção sem cortar
-        backgroundColor: "#E6F4FE",         // cor de fundo da splash
+        image: "./assets/images/icon.png",
+        imageWidth: 200,
+        resizeMode: "contain",
+        backgroundColor: "#E6F4FE",
         dark: {
-          backgroundColor: "#04112d",       // fundo escuro (modo noturno)
+          backgroundColor: "#04112d",
         },
       },
     ],
-
     "expo-location",
     "expo-notifications",
   ],
@@ -67,9 +58,6 @@ const config: ExpoConfig = {
     typedRoutes: true,
   },
 
-  // ─────────────────────────────────────────────────────────────
-  // Variáveis de ambiente (acessíveis via Constants.expoConfig.extra)
-  // ─────────────────────────────────────────────────────────────
   extra: {
     ORIGIN_VIDEO_URL: process.env.ORIGIN_VIDEO_URL,
     ORIGIN_LINKEDIN_URL: process.env.ORIGIN_LINKEDIN_URL,
@@ -77,7 +65,6 @@ const config: ExpoConfig = {
     ORIGIN_GITHUB_URL: process.env.ORIGIN_GITHUB_URL,
     ORIGIN_HELP_APP: process.env.ORIGIN_HELP_APP,
   },
-  
 };
 
 export default config;

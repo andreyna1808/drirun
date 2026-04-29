@@ -308,4 +308,17 @@ export default {
   bmi_profile_height: "{{height}} cm",
   bmi_profile_age: "{{age}} años",
 
+  // Metrics
+  metrics_empty_title: "Sin datos aún",
+  metrics_empty_text: "¡Completa tu primera carrera para ver las métricas aquí!",
+  metrics_summary_runs: "Carreras",
+  metrics_summary_distance: "Total km",
+  metrics_summary_calories: "Total kcal",
+  metrics_summary_pace: "Ritmo medio",
+  metrics_summary_duration: "Tiempo medio",
+  metrics_chart_distance: "Distancia (km)",
+  metrics_chart_calories: "Calorías (kcal)",
+  metrics_chart_pace: "Ritmo Medio (min/km)",
+  metrics_chart_duration: "Tiempo de Carrera (min)",
+  metrics_week_prefix: "S",
 };

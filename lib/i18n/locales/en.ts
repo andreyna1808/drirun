@@ -307,4 +307,18 @@ export default {
   bmi_profile_weight: "{{weight}} kg",
   bmi_profile_height: "{{height}} cm",
   bmi_profile_age: "{{age}} years",
+
+  // Metrics
+  metrics_empty_title: "No data yet",
+  metrics_empty_text: "Complete your first run to see metrics here!",
+  metrics_summary_runs: "Runs",
+  metrics_summary_distance: "Total km",
+  metrics_summary_calories: "Total kcal",
+  metrics_summary_pace: "Avg pace",
+  metrics_summary_duration: "Avg time",
+  metrics_chart_distance: "Distance (km)",
+  metrics_chart_calories: "Calories (kcal)",
+  metrics_chart_pace: "Average Pace (min/km)",
+  metrics_chart_duration: "Run Time (min)",
+  metrics_week_prefix: "W",
 };
