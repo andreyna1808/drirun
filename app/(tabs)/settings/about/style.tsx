@@ -1,6 +1,6 @@
 import { StyleSheet, } from "react-native";
 
-export function createStyles(colors: any) {
+export const AboutStyles = (colors: any) => {
     return StyleSheet.create({
         header: {
             flexDirection: "row",

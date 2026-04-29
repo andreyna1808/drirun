@@ -4,7 +4,7 @@ import {
     StyleSheet
 } from "react-native";
 
-export function createStyles(colors: any) {
+export const ProfileStyles = (colors: any) => {
     return StyleSheet.create({
         content: { padding: 20 },
         title: { fontSize: 24, fontWeight: "800", color: colors.foreground, marginBottom: 24 },

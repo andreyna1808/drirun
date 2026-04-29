@@ -16,6 +16,20 @@ export default {
   error: "Erro",
   success: "Sucesso",
 
+  // Home - adicionais
+  home_goal_label: "Meta: {{days}} dias",
+  home_recent_activities: "Últimas Atividades",
+  home_motivational_1: "Cada quilômetro é uma vitória sobre a preguiça. 💪",
+  home_motivational_2: "Você não precisa ser rápido. Só precisa ir. 🏃",
+  home_motivational_3: "A consistência bate o talento todo dia. 🔥",
+  home_motivational_4: "Sua Fênix está esperando para crescer com você. 🦅",
+  home_motivational_5: "Um passo de cada vez. Você consegue! ⚡",
+  home_motivational_6: "O único treino ruim é o que não aconteceu. 🎯",
+  home_motivational_7: "Corra hoje. Agradeça amanhã. 🌅",
+  home_motivational_8: "Cada suor é uma lágrima da preguiça. 💦",
+  home_motivational_9: "Você já fez isso antes. Você pode de novo. 🏆",
+  home_motivational_10: "Movimento é vida. Vá em frente! 🌟",
+
   // Onboarding
   onboarding_welcome_title: "Bem-vindo ao DriRun!",
   onboarding_welcome_subtitle: "Sua jornada de transformação começa aqui.",
@@ -263,5 +277,32 @@ export default {
   profile_edit_title: "Editar Perfil",
   profile_save_button: "Salvar Alterações",
   profile_save_success: "Perfil atualizado!",
+
+  // BMI (adicionar aos existentes)
+  bmi_unit: "IMC",
+  bmi_value_label: "IMC: {{value}}",
+  bmi_ideal_weight_range: "{{min}} – {{max}} kg",
+  bmi_ideal_weight_for_height: "Para sua altura de {{height}} cm",
+  bmi_diff_above: "Diferença: {{kg}} kg acima do ideal",
+  bmi_diff_below: "Diferença: {{kg}} kg abaixo do ideal",
+
+  // Calendário / BMI resumo
+  calendar_bmi_section_title: "Seu IMC",
+  calendar_bmi_no_profile: "Complete o perfil para calcular o IMC.",
+  calendar_stat_done: "Feitos",
+  calendar_stat_missed: "Perdidos",
+  calendar_stat_remaining: "Restantes",
+  calendar_stat_progress: "Progresso",
+  calendar_empty: "Nenhum desafio ativo. Configure sua meta nas Configurações.",
+  bmi_unit_label: "kg/m²",
+  bmi_category_short_bmi_underweight: "Abaixo do peso",
+  bmi_category_short_bmi_normal: "Peso normal",
+  bmi_category_short_bmi_overweight: "Sobrepeso",
+  bmi_category_short_bmi_obese1: "Obesidade I",
+  bmi_category_short_bmi_obese2: "Obesidade II",
+  bmi_category_short_bmi_obese3: "Obesidade III",
+  bmi_profile_weight: "{{weight}} kg",
+  bmi_profile_height: "{{height}} cm",
+  bmi_profile_age: "{{age}} anos",
 
 };

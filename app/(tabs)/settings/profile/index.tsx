@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
-import { createStyles } from "./style";
+import { ProfileStyles } from "./style";
 
 export default function EditProfileScreen() {
     const { t } = useTranslation();
@@ -21,7 +21,7 @@ export default function EditProfileScreen() {
     const [weight, setWeight] = useState(String(state.profile?.weight ?? ""));
     const [sex, setSex] = useState<"male" | "female" | "other">(state.profile?.sex ?? "other");
 
-    const styles = createStyles(colors);
+    const styles = ProfileStyles(colors);
 
     const handleSave = () => {
         const ageNum = parseInt(age, 10);

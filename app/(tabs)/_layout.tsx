@@ -46,12 +46,17 @@ export default function TabLayout() {
         }}
       />
 
+      <Tabs.Screen name="calendar/bmi" options={{ href: null }} />
+
+      <Tabs.Screen name="pet/pet-gallery" options={{ href: null }} />
+      <Tabs.Screen name="pet/shop" options={{ href: null }} />
+
       <Tabs.Screen name="settings/profile/index" options={{ href: null }} />
       <Tabs.Screen name="settings/about/index" options={{ href: null }} />
 
       {/* Métricas */}
       <Tabs.Screen
-        name="metrics"
+        name="metrics/index"
         options={{
           title: "Métricas",
           tabBarIcon: ({ color }) => (
@@ -62,7 +67,7 @@ export default function TabLayout() {
 
       {/* Calendário (inclui IMC) */}
       <Tabs.Screen
-        name="calendar"
+        name="calendar/index"
         options={{
           title: "Calendário",
           tabBarIcon: ({ color }) => (
@@ -73,7 +78,7 @@ export default function TabLayout() {
 
       {/* Pet */}
       <Tabs.Screen
-        name="pet"
+        name="pet/index"
         options={{
           title: "Meu Pet",
           tabBarIcon: ({ color }) => (
@@ -118,14 +123,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="gearshape.fill" color={color} />
           ),
-        }}
-      />
-
-      {/* Aba IMC oculta — conteúdo integrado ao Calendário */}
-      <Tabs.Screen
-        name="bmi"
-        options={{
-          href: null,
         }}
       />
     </Tabs>

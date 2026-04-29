@@ -10,7 +10,6 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "qr": "node scripts/generate_qr.mjs"
   },
   "dependencies": {

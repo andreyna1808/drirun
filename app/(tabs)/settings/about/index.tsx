@@ -12,7 +12,7 @@ import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
-import { createStyles } from "./style";
+import { AboutStyles } from "./style";
 import Constants from "expo-constants";
 
 const { extra } = Constants.expoConfig || {};
@@ -31,12 +31,11 @@ const APP_VERSION = "1.0.0";
 export default function AboutScreen() {
   const { t } = useTranslation();
   const colors = useColors();
-  const styles = createStyles(colors);
+  const styles = AboutStyles(colors);
 
   async function openLink(url: string) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      // Tenta abrir diretamente – no iOS, se não houver app que suporte, abre no navegador
       await Linking.openURL(url);
     } catch (error) {
       console.error("Erro ao abrir URL:", error);
