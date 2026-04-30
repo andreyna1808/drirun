@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import {
@@ -30,7 +31,7 @@ import { PetShopStyles } from "@/styles/tabs/pet-shop.styles";
 
 // ── Pacotes de gemas (IAP) ────────────────────────────────────────────────────
 const GEM_PACKAGES = [
-  { id: "gems_50",  gems: 50,  price: "R$ 10,00", emoji: "💎",   bonus: "" },
+  { id: "gems_50", gems: 50, price: "R$ 10,00", emoji: "💎", bonus: "" },
   { id: "gems_150", gems: 150, price: "R$ 25,00", emoji: "💎💎", bonus: "+10%" },
   { id: "gems_250", gems: 250, price: "R$ 40,00", emoji: "💎💎💎", bonus: "+20%" },
   { id: "gems_500", gems: 500, price: "R$ 70,00", emoji: "💎💎💎💎", bonus: "+30%" },
@@ -38,15 +39,16 @@ const GEM_PACKAGES = [
 
 // ── Categorias da loja ────────────────────────────────────────────────────────
 const CATEGORIES: { key: ShopCategory | "all"; label: string; emoji: string }[] = [
-  { key: "all",        label: "Todos",      emoji: "🛒" },
-  { key: "outfit",     label: "Roupas",     emoji: "👕" },
-  { key: "accessory",  label: "Acessórios", emoji: "👑" },
-  { key: "background", label: "Fundos",     emoji: "🖼️" },
-  { key: "furniture",  label: "Mobília",    emoji: "🛋️" },
-  { key: "color",      label: "Cores",      emoji: "🎨" },
+  { key: "all", label: "shop_category_all", emoji: "🛒" },
+  { key: "outfit", label: "shop_category_outfit", emoji: "👕" },
+  { key: "accessory", label: "shop_category_accessory", emoji: "👑" },
+  { key: "background", label: "shop_category_background", emoji: "🖼️" },
+  { key: "furniture", label: "shop_category_furniture", emoji: "🛋️" },
+  { key: "color", label: "shop_category_color", emoji: "🎨" },
 ];
 
 export default function ShopScreen() {
+  const { t } = useTranslation();
   const { state, dispatch } = useApp();
   const colors = useColors();
   const [selectedCategory, setSelectedCategory] = useState<ShopCategory | "all">("all");
@@ -65,31 +67,31 @@ export default function ShopScreen() {
   /** Compra um item da loja */
   function handleBuyItem(item: ShopItem) {
     if (isOwned(item.id)) {
-      Alert.alert("Já possui!", `Você já tem "${item.name}".`);
+      Alert.alert(t("shop_already_owned_title"), t("shop_already_owned_msg", { name: item.name }));
       return;
     }
     if (state.gems < item.cost) {
       Alert.alert(
-        "Gemas insuficientes 💎",
-        `Você precisa de ${item.cost} gemas, mas tem apenas ${state.gems}.\n\nComplete corridas ou compre mais gemas!`,
+        t("shop_insufficient_gems_title"),
+        t("shop_insufficient_gems_msg", { cost: item.cost, gems: state.gems }),
         [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Comprar Gemas", onPress: () => setActiveTab("gems") },
+          { text: t("shop_cancel"), style: "cancel" },
+          { text: t("shop_buy_gems"), onPress: () => setActiveTab("gems") },
         ]
       );
       return;
     }
     Alert.alert(
-      `Comprar ${item.emoji} ${item.name}?`,
-      `Custo: ${item.cost} 💎\nSeu saldo: ${state.gems} 💎`,
+      t("shop_confirm_buy_title", { emoji: item.emoji, name: item.name }),
+      t("shop_confirm_buy_msg", { cost: item.cost, gems: state.gems }),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("shop_cancel"), style: "cancel" },
         {
-          text: "Comprar!",
+          text: t("shop_confirm_buy_button"),
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             dispatch({ type: "BUY_SHOP_ITEM", payload: { itemId: item.id, cost: item.cost } });
-            Alert.alert("Comprado! 🎉", `"${item.name}" foi adicionado ao seu pet!`);
+            Alert.alert(t("shop_purchase_success_title"), t("shop_purchase_success_msg", { name: item.name }));
           },
         },
       ]
@@ -99,17 +101,17 @@ export default function ShopScreen() {
   /** Simula compra de pacote de gemas (IAP placeholder) */
   function handleBuyGems(pkg: typeof GEM_PACKAGES[0]) {
     Alert.alert(
-      `Comprar ${pkg.gems} 💎?`,
-      `Valor: ${pkg.price}\n${pkg.bonus ? `Bônus: ${pkg.bonus}` : ""}`,
+      t("shop_confirm_gems_title", { gems: pkg.gems }),
+      t("shop_confirm_gems_msg", { price: pkg.price, bonus: pkg.bonus }),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("shop_cancel"), style: "cancel" },
         {
-          text: "Comprar",
+          text: t("shop_buy"),
           onPress: () => {
             // TODO: Integrar com expo-in-app-purchases para produção
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             dispatch({ type: "ADD_GEMS", payload: pkg.gems });
-            Alert.alert("Gemas adicionadas! 💎", `+${pkg.gems} gemas foram adicionadas!`);
+            Alert.alert(t("shop_gems_added_title"), t("shop_gems_added_msg", { gems: pkg.gems }));
           },
         },
       ]
@@ -126,9 +128,9 @@ export default function ShopScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Text style={[styles.backText, { color: colors.primary }]}>← Voltar</Text>
+          <Text style={[styles.backText, { color: colors.primary }]}>← {t("shop_back")}</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>🛒 Pet Shop</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>🛒 {t("shop_title")}</Text>
         <View style={[styles.gemsDisplay, { backgroundColor: colors.primary + "20" }]}>
           <Text style={[styles.gemsText, { color: colors.primary }]}>💎 {state.gems}</Text>
         </View>
@@ -146,7 +148,7 @@ export default function ShopScreen() {
             onPress={() => { setActiveTab(tab); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
             <Text style={[styles.tabText, { color: activeTab === tab ? colors.primary : colors.muted }]}>
-              {tab === "items" ? "🎁 Itens" : "💎 Gemas"}
+              {tab === "items" ? t("shop_tab_items") : t("shop_tab_gems")}
             </Text>
           </TouchableOpacity>
         ))}
@@ -177,7 +179,7 @@ export default function ShopScreen() {
                   styles.categoryLabel,
                   { color: selectedCategory === cat.key ? "#FFFFFF" : colors.muted },
                 ]}>
-                  {cat.label}
+                  {t(cat.label)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -222,7 +224,7 @@ export default function ShopScreen() {
                   {/* Preço ou "Possuído" */}
                   {owned ? (
                     <View style={[styles.ownedBadge, { backgroundColor: colors.success + "20" }]}>
-                      <Text style={[styles.ownedText, { color: colors.success }]}>✅ Possuído</Text>
+                      <Text style={[styles.ownedText, { color: colors.success }]}>✅ {t("shop_owned_badge")}</Text>
                     </View>
                   ) : (
                     <View style={[
@@ -248,33 +250,33 @@ export default function ShopScreen() {
       {activeTab === "gems" && (
         <ScrollView contentContainerStyle={styles.gemsContent}>
           <Text style={[styles.gemsTitle, { color: colors.foreground }]}>
-            Recarregue suas Gemas 💎
+            {t("shop_gems_title")} 💎
           </Text>
           <Text style={[styles.gemsSubtitle, { color: colors.muted }]}>
-            Use gemas para comprar itens exclusivos para sua Fênix!
+            {t("shop_gems_subtitle")}
           </Text>
 
           {/* Saldo atual */}
           <View style={[styles.balanceCard, { backgroundColor: colors.primary + "15", borderColor: colors.primary }]}>
-            <Text style={[styles.balanceLabel, { color: colors.muted }]}>Seu saldo atual</Text>
-            <Text style={[styles.balanceValue, { color: colors.primary }]}>💎 {state.gems} gemas</Text>
+            <Text style={[styles.balanceLabel, { color: colors.muted }]}>{t("shop_balance_label")}</Text>
+            <Text style={[styles.balanceValue, { color: colors.primary }]}>💎 {state.gems} {t("shop_gems_unit")}</Text>
           </View>
 
           {/* Como ganhar gemas grátis */}
           <View style={[styles.freeGemsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.freeGemsTitle, { color: colors.foreground }]}>Ganhe gemas grátis!</Text>
+            <Text style={[styles.freeGemsTitle, { color: colors.foreground }]}>{t("shop_free_gems_title")}</Text>
             <View style={styles.freeGemRow}>
               <Text style={styles.freeGemEmoji}>🏃</Text>
-              <Text style={[styles.freeGemText, { color: colors.muted }]}>Complete um dia de corrida → +25 💎</Text>
+              <Text style={[styles.freeGemText, { color: colors.muted }]}>{t("shop_free_gems_run")}</Text>
             </View>
             <View style={styles.freeGemRow}>
               <Text style={styles.freeGemEmoji}>📺</Text>
-              <Text style={[styles.freeGemText, { color: colors.muted }]}>Assista um anúncio → +50 💎</Text>
+              <Text style={[styles.freeGemText, { color: colors.muted }]}>{t("shop_free_gems_ad")}</Text>
             </View>
           </View>
 
           {/* Pacotes de gemas */}
-          <Text style={[styles.packagesTitle, { color: colors.foreground }]}>Pacotes de Gemas</Text>
+          <Text style={[styles.packagesTitle, { color: colors.foreground }]}>{t("shop_packages_title")}</Text>
           {GEM_PACKAGES.map((pkg) => (
             <TouchableOpacity
               key={pkg.id}
@@ -285,7 +287,7 @@ export default function ShopScreen() {
               <Text style={styles.gemPackageEmoji}>{pkg.emoji}</Text>
               <View style={styles.gemPackageInfo}>
                 <Text style={[styles.gemPackageAmount, { color: colors.foreground }]}>
-                  {pkg.gems} Gemas
+                  {pkg.gems} {t("shop_gems_unit")}
                   {pkg.bonus ? (
                     <Text style={[styles.gemPackageBonus, { color: colors.success }]}> {pkg.bonus}</Text>
                   ) : null}
@@ -293,18 +295,16 @@ export default function ShopScreen() {
                 <Text style={[styles.gemPackagePrice, { color: colors.muted }]}>{pkg.price}</Text>
               </View>
               <View style={[styles.buyButton, { backgroundColor: colors.primary }]}>
-                <Text style={styles.buyButtonText}>Comprar</Text>
+                <Text style={styles.buyButtonText}>{t("shop_buy_button")}</Text>
               </View>
             </TouchableOpacity>
           ))}
 
           <Text style={[styles.iapDisclaimer, { color: colors.muted }]}>
-            * Pagamentos processados pela App Store / Google Play.
-            Gemas são válidas apenas neste app.
+            * {t("shop_disclaimer")}
           </Text>
         </ScrollView>
       )}
     </ScreenContainer>
   );
 }
-
