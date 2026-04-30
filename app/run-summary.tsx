@@ -8,7 +8,6 @@ import {
   Alert,
 } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
-
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
@@ -16,33 +15,8 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { RunSummaryStyles } from "@/styles/run-summary.styles";
 import { useRewardedAd } from "@/hooks/use-ads";
-
-/** Formata segundos em string legivel */
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}min`;
-  if (m > 0) return `${m}min ${s}s`;
-  return `${s}s`;
-}
-
-/** Formata pace em min:ss /km */
-function formatPace(paceSecondsPerKm: number): string {
-  if (!isFinite(paceSecondsPerKm) || paceSecondsPerKm <= 0) return "--:--";
-  const m = Math.floor(paceSecondsPerKm / 60);
-  const s = Math.round(paceSecondsPerKm % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-/** Calcula o dia atual da meta (quantos dias ja foram concluidos) */
-function getCurrentGoalDay(runs: any[], goalStartDate: string | null): number {
-  if (!goalStartDate) return 0;
-  const start = new Date(goalStartDate);
-  const today = new Date();
-  const diff = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-  return Math.min(diff + 1, runs.length);
-}
+import { formatDuration, formatPace } from "@/utils/tabs";
+import { MetricItem } from "@/components/metric-item";
 
 export default function RunSummaryScreen() {
   const { t } = useTranslation();
@@ -357,17 +331,6 @@ export default function RunSummaryScreen() {
           <View style={{ height: 32 }} />
         </Animated.View>
       </ScrollView>
-    </View>
-  );
-}
-
-/** Componente de metrica individual */
-function MetricItem({ label, value, emoji, colors }: { label: string; value: string; emoji: string; colors: any }) {
-  return (
-    <View style={{ alignItems: "center", flex: 1, minWidth: "45%", marginBottom: 16 }}>
-      <Text style={{ fontSize: 24, marginBottom: 4 }}>{emoji}</Text>
-      <Text style={{ fontSize: 20, fontWeight: "800", color: colors.foreground }}>{value}</Text>
-      <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>{label}</Text>
     </View>
   );
 }

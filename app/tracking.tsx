@@ -3,9 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Alert,
-  Dimensions,
   ActivityIndicator,
 } from "react-native";
 import MapView, { Polyline, Marker } from "react-native-maps";
@@ -19,69 +17,10 @@ import { useColors } from "@/hooks/use-colors";
 import { TrackingStyles } from "@/styles/tracking.styles";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
-
-
-// ─── Constantes de cálculo ────────────────────────────────────────────────────
-
-/** MET (Metabolic Equivalent of Task) para corrida moderada */
-const MET_RUNNING = 8.0;
-/** MET para caminhada */
-const MET_WALKING = 3.5;
-
-/**
- * Calcula a distância em metros entre dois pontos GPS usando a fórmula de Haversine.
- */
-function haversineDistance(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number
-): number {
-  const R = 6371000; // raio da Terra em metros
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-/**
- * Estima as calorias gastas com base no peso, MET e tempo em horas.
- * Fórmula: kcal = MET × peso(kg) × tempo(h)
- */
-function estimateCalories(weightKg: number, durationSeconds: number, met = MET_RUNNING): number {
-  const hours = durationSeconds / 3600;
-  return Math.round(met * weightKg * hours);
-}
-
-/**
- * Formata segundos em string MM:SS ou HH:MM:SS.
- */
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-/**
- * Formata o pace em min/km (ex: "5:30 /km").
- */
-function formatPace(paceSecondsPerKm: number): string {
-  if (!isFinite(paceSecondsPerKm) || paceSecondsPerKm <= 0) return "--:-- /km";
-  const m = Math.floor(paceSecondsPerKm / 60);
-  const s = Math.round(paceSecondsPerKm % 60);
-  return `${m}:${String(s).padStart(2, "0")} /km`;
-}
-
-// ─── Componente ───────────────────────────────────────────────────────────────
+import { formatDuration, formatPace } from "@/utils/tabs";
+import { haversineDistance, estimateCalories } from "@/utils/tracking";
 
 export default function TrackingScreen() {
-  // Mantém a tela sempre ligada durante a corrida
   useKeepAwake();
 
   const { t } = useTranslation();
