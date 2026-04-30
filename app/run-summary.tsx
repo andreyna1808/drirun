@@ -23,6 +23,7 @@ const Polyline = Platform.OS !== "web" ? require("react-native-maps").Polyline :
 const Marker = Platform.OS !== "web" ? require("react-native-maps").Marker : null;
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { RunSummaryStyles } from "@/styles/run-summary.styles";
@@ -58,6 +59,7 @@ function getCurrentGoalDay(runs: any[], goalStartDate: string | null): number {
 }
 
 export default function RunSummaryScreen() {
+  const { t } = useTranslation();
   const { runId } = useLocalSearchParams<{ runId: string }>();
   const { state, dispatch } = useApp();
   const colors = useColors();
@@ -75,7 +77,7 @@ export default function RunSummaryScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     dispatch({ type: "ADD_GEMS", payload: 25 }); // 25 gemas
     setAdWatched(true);
-    Alert.alert("Parabéns! 💎", "+25 gemas adicionadas ao seu saldo!");
+    Alert.alert(t("ad_reward_title"), t("ad_reward_message"));
   });
 
   // Busca os dados da corrida pelo ID
@@ -158,22 +160,22 @@ export default function RunSummaryScreen() {
   /** Simula assistir anuncio para ganhar 50 gemas extras */
   function handleWatchAd() {
     if (adWatched) {
-      Alert.alert("Já assistido!", "Você já ganhou o bônus de hoje.");
+      Alert.alert(t("ad_already_watched_title"), t("ad_already_watched_message"));
       return;
     }
 
     if (!loaded) {
-      Alert.alert("Aguarde", "O anúncio ainda está carregando, tente novamente em instantes.");
+      Alert.alert(t("ad_not_ready_title"), t("ad_not_ready_message"));
       return;
     }
 
     Alert.alert(
-      "Assistir Anúncio?",
-      "Assista um anúncio curto e ganhe +25 💎 de bônus!",
+      t("watch_ad_confirm_title"),
+      t("watch_ad_confirm_message"),
       [
-        { text: "Agora não", style: "cancel" },
+        { text: t("watch_ad_cancel"), style: "cancel" },
         {
-          text: "Assistir e ganhar 25 💎",
+          text: t("watch_ad_confirm_button"),
           onPress: () => showAd(),
         },
       ]
@@ -200,9 +202,9 @@ export default function RunSummaryScreen() {
   if (!run) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.muted }]}>Corrida nao encontrada.</Text>
+        <Text style={[styles.errorText, { color: colors.muted }]}>{t("run_not_found")}</Text>
         <TouchableOpacity onPress={() => router.replace("/(tabs)")}>
-          <Text style={[styles.backLink, { color: colors.primary }]}>Voltar para o inicio</Text>
+          <Text style={[styles.backLink, { color: colors.primary }]}>{t("back_to_home")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -230,15 +232,15 @@ export default function RunSummaryScreen() {
 
           {/* Titulo de celebracao */}
           <Text style={styles.celebrationTitle}>
-            Incrivel! Dia {currentDay}/{goalDays} Concluido!
+            {t("celebration_day_completed", { currentDay, goalDays })}
           </Text>
           <Text style={styles.celebrationSubtitle}>
-            {state.profile?.name ?? "Atleta"}, voce e demais! 🏆
+            {t("celebration_praise", { name: state.profile?.name ?? t("athlete_default") })}
           </Text>
 
           {/* Badge de gemas ganhas */}
           <View style={styles.gemsEarned}>
-            <Text style={styles.gemsEarnedText}>+25 💎 Gemas Ganhas!</Text>
+            <Text style={styles.gemsEarnedText}>{t("gems_earned_badge")}</Text>
           </View>
 
           {/* Progresso da meta */}
@@ -250,7 +252,7 @@ export default function RunSummaryScreen() {
               ]} />
             </View>
             <Text style={styles.progressText}>
-              {currentDay}/{goalDays} dias ({Math.round((currentDay / goalDays) * 100)}%)
+              {t("progress_text", { current: currentDay, total: goalDays, percent: Math.round((currentDay / goalDays) * 100) })}
             </Text>
           </View>
         </View>
@@ -261,28 +263,28 @@ export default function RunSummaryScreen() {
           opacity: metricsOpacity,
         }}>
           <View style={[styles.metricsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.metricsTitle, { color: colors.foreground }]}>📊 Resumo da Corrida</Text>
+            <Text style={[styles.metricsTitle, { color: colors.foreground }]}>📊 {t("run_summary_title")}</Text>
             <View style={styles.metricsGrid}>
               <MetricItem
-                label="Distancia"
+                label={t("metric_distance")}
                 value={`${(run.distance / 1000).toFixed(2)} km`}
                 emoji="📍"
                 colors={colors}
               />
               <MetricItem
-                label="Pace medio"
+                label={t("metric_pace")}
                 value={`${formatPace(run.pace)} /km`}
                 emoji="⚡"
                 colors={colors}
               />
               <MetricItem
-                label="Tempo total"
+                label={t("metric_duration")}
                 value={formatDuration(run.duration)}
                 emoji="⏱️"
                 colors={colors}
               />
               <MetricItem
-                label="Calorias"
+                label={t("metric_calories")}
                 value={`${run.calories} kcal`}
                 emoji="🔥"
                 colors={colors}
@@ -293,7 +295,7 @@ export default function RunSummaryScreen() {
           {/* ── Mapa da rota ── */}
           {hasRoute && (
             <View style={[styles.mapCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.metricsTitle, { color: colors.foreground }]}>🗺️ Sua Rota</Text>
+              <Text style={[styles.metricsTitle, { color: colors.foreground }]}>🗺️ {t("route_title")}</Text>
               {Platform.OS !== "web" && MapView ? (
                 <MapView
                   style={styles.map}
@@ -310,8 +312,8 @@ export default function RunSummaryScreen() {
                   )}
                   {Marker && route.length > 0 && (
                     <>
-                      <Marker coordinate={route[0]} title="Inicio" pinColor="green" />
-                      <Marker coordinate={route[route.length - 1]} title="Fim" pinColor="red" />
+                      <Marker coordinate={route[0]} title={t("marker_start")} pinColor="green" />
+                      <Marker coordinate={route[route.length - 1]} title={t("marker_end")} pinColor="red" />
                     </>
                   )}
                 </MapView>
@@ -329,17 +331,17 @@ export default function RunSummaryScreen() {
             >
               <Text style={styles.adEmoji}>📺</Text>
               <View style={styles.adInfo}>
-                <Text style={[styles.adTitle, { color: colors.foreground }]}>Ganhe mais 50 💎!</Text>
-                <Text style={[styles.adSubtitle, { color: colors.muted }]}>Assista um anuncio curto</Text>
+                <Text style={[styles.adTitle, { color: colors.foreground }]}>{t("ad_bonus_title")}</Text>
+                <Text style={[styles.adSubtitle, { color: colors.muted }]}>{t("ad_bonus_subtitle")}</Text>
               </View>
-              <Text style={[styles.adBadge, { backgroundColor: colors.warning, color: "#FFFFFF" }]}>+50 💎</Text>
+              <Text style={[styles.adBadge, { backgroundColor: colors.warning, color: "#FFFFFF" }]}>+25 💎</Text>
             </TouchableOpacity>
           )}
 
           {adWatched && (
             <View style={[styles.adWatchedBadge, { backgroundColor: colors.success + "20", borderColor: colors.success }]}>
               <Text style={[styles.adWatchedText, { color: colors.success }]}>
-                ✅ Bonus de anuncio ja coletado hoje!
+                {t("ad_already_collected")}
               </Text>
             </View>
           )}
@@ -348,14 +350,14 @@ export default function RunSummaryScreen() {
           <View style={[styles.motivationCard, { backgroundColor: colors.primary + "15", borderColor: colors.primary }]}>
             <Text style={[styles.motivationText, { color: colors.primary }]}>
               {currentDay >= goalDays
-                ? "🏆 VOCE COMPLETOU O DESAFIO! Sua Fenix e livre!"
+                ? t("motivation_complete")
                 : currentDay >= goalDays * 0.75
-                  ? "🔥 Incrivel! Voce esta nos 75%! A linha de chegada esta proxima!"
+                  ? t("motivation_75")
                   : currentDay >= goalDays * 0.5
-                    ? "💪 Metade do caminho! Voce e consistente!"
+                    ? t("motivation_50")
                     : currentDay >= 7
-                      ? "⚡ Uma semana completa! Habito formado!"
-                      : `🌱 Dia ${currentDay} concluido! Cada passo conta!`}
+                      ? t("motivation_7days")
+                      : t("motivation_default", { currentDay })}
             </Text>
           </View>
 
@@ -367,7 +369,7 @@ export default function RunSummaryScreen() {
               router.replace("/(tabs)");
             }}
           >
-            <Text style={styles.homeButtonText}>🏠 Voltar ao Inicio</Text>
+            <Text style={styles.homeButtonText}>{t("back_home_button")}</Text>
           </TouchableOpacity>
 
           <View style={{ height: 32 }} />
@@ -387,4 +389,3 @@ function MetricItem({ label, value, emoji, colors }: { label: string; value: str
     </View>
   );
 }
-
