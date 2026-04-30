@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
-import { CalendarStyles, CELL_SIZE } from "./styles";
+import { CalendarStyles, CELL_SIZE } from "@/styles/tabs/calendar.styles";
 
 interface BMICategory {
   key: string;           // chave de tradução

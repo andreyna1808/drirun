@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { OnboardingStyles } from "@/styles/onboarding.styles";
 
 const WELCOME_PHRASES = [
   "A jornada de mil milhas começa com um único passo.",
@@ -420,7 +420,7 @@ export default function OnboardingScreen() {
     }
   };
 
-  const styles = createStyles(colors);
+  const styles = OnboardingStyles(colors);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -482,148 +482,3 @@ function StepIndicator({ current, total, colors }: { current: number; total: num
   );
 }
 
-function createStyles(colors: any) {
-  return StyleSheet.create({
-    stepContainer: { width: "100%", alignItems: "center", display: "flex", flex: 1, justifyContent: "space-between", marginTop: 24 },
-    heroEmoji: { fontSize: 72, marginBottom: 8 },
-    appName: { fontSize: 40, fontWeight: "900", letterSpacing: 3 },
-    tagline: { fontSize: 16, marginBottom: 20, letterSpacing: 1, color: colors.muted },
-    phrase: { fontSize: 15, fontStyle: "italic", textAlign: "center", marginBottom: 32, lineHeight: 22, color: colors.foreground },
-    featureList: { width: "100%", marginBottom: 32 },
-    featureItem: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
-    featureIcon: { fontSize: 22 },
-    featureText: { fontSize: 15, flex: 1, color: colors.foreground },
-    stepTitle: { fontSize: 25, fontWeight: "800", marginBottom: 2, textAlign: "center", color: colors.foreground },
-    stepSubtitle: { fontSize: 15, textAlign: "center", marginBottom: 4, lineHeight: 22, color: colors.muted },
-    form: { width: "100%", marginBottom: 12, height: "85%" },
-    label: { fontSize: 13, marginBottom: 6, fontWeight: "600", color: colors.muted },
-    input: {
-      borderWidth: 1,
-      borderRadius: 10,
-      padding: 14,
-      fontSize: 16,
-      marginBottom: 12,
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      color: colors.foreground,
-    },
-    sexRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
-    sexButton: {
-      flex: 1,
-      paddingVertical: 12,
-      borderRadius: 10,
-      borderWidth: 1.5,
-      alignItems: "center",
-      gap: 4,
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-    },
-    sexEmoji: { fontSize: 22 },
-    sexButtonText: { fontSize: 12, fontWeight: "600" },
-    goalEmoji: { fontSize: 64, marginBottom: 8 },
-    goalContainer: { alignItems: "center", marginBottom: 24, width: "100%" },
-    goalInput: {
-      fontSize: 72,
-      fontWeight: "900",
-      textAlign: "center",
-      width: 180,
-      borderBottomWidth: 3,
-      paddingBottom: 8,
-      color: colors.primary,
-      borderBottomColor: colors.primary,
-    },
-    goalLabel: { fontSize: 18, marginTop: 8, fontWeight: "600", color: colors.muted },
-    goalHint: { fontSize: 12, marginTop: 8, color: colors.muted },
-    goalShortcuts: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 24 },
-    shortcutButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 14,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    shortcutText: { fontSize: 13, fontWeight: "600", color: colors.muted },
-    petPreview: {
-      borderRadius: 10,
-      padding: 20,
-      width: "100%",
-      alignItems: "center",
-      marginBottom: 24,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    petPreviewEmoji: { fontSize: 48, marginBottom: 8 },
-    petPreviewText: { fontSize: 16, fontWeight: "700", marginBottom: 6, textAlign: "center", color: colors.foreground },
-    petPreviewSub: { fontSize: 13, textAlign: "center", lineHeight: 20, color: colors.muted },
-    notifEmoji: { fontSize: 64, marginBottom: 8 },
-    notifButtons: { width: "100%", gap: 12, marginTop: 24, height: "60%" },
-    notifAllowButton: { paddingVertical: 16, borderRadius: 10, alignItems: "center", backgroundColor: colors.primary },
-    notifAllowText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
-    notifDenyButton: { paddingVertical: 14, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-    notifDenyText: { fontSize: 15, fontWeight: "600", color: colors.muted },
-    notifConfirm: { borderRadius: 10, padding: 12, borderWidth: 1, marginBottom: 20, width: "100%", alignItems: "center", backgroundColor: colors.success + "20", borderColor: colors.success },
-    notifConfirmText: { fontSize: 15, fontWeight: "700", color: colors.success },
-    timePickerSection: { width: "100%", alignItems: "center", height: "70%" },
-    timeLabel: { fontSize: 18, fontWeight: "700", marginBottom: 20, textAlign: "center", color: colors.foreground },
-    timeHint: { fontSize: 13, marginBottom: 16, textAlign: "center", color: colors.muted },
-    timePickerButton: {
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      borderRadius: 10,
-      borderWidth: 1,
-      marginBottom: 24,
-      alignItems: "center",
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-    },
-    unitButton: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 10,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    unitButtonActive: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    unitText: { fontSize: 14, fontWeight: "600", color: colors.muted },
-    notifDeniedSection: { width: "100%", alignItems: "center", height: "20%" },
-    notifDeniedCard: { borderRadius: 10, padding: 16, borderWidth: 1, width: "100%", backgroundColor: colors.surface, borderColor: colors.border },
-    notifDeniedText: { fontSize: 14, lineHeight: 22, textAlign: "center", color: colors.muted },
-    navigationButtons: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginTop: 24,
-      width: "100%",
-      gap: 12,
-    },
-    navButton: {
-      flex: 1,
-      paddingVertical: 14,
-      borderRadius: 10,
-      alignItems: "center",
-    },
-    backButton: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    backButtonText: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: colors.foreground,
-    },
-    nextButton: {
-      backgroundColor: colors.primary,
-    },
-    nextButtonText: {
-      fontSize: 16,
-      fontWeight: "700",
-      color: "#FFF",
-    },
-  });
-}

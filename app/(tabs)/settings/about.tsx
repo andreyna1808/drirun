@@ -12,8 +12,8 @@ import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
-import { AboutStyles } from "./style";
 import Constants from "expo-constants";
+import { SettingsAboutStyles } from "@/styles/tabs/settings-about.styles";
 
 const { extra } = Constants.expoConfig || {};
 
@@ -31,7 +31,7 @@ const APP_VERSION = "1.0.0";
 export default function AboutScreen() {
   const { t } = useTranslation();
   const colors = useColors();
-  const styles = AboutStyles(colors);
+  const styles = SettingsAboutStyles(colors);
 
   async function openLink(url: string) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

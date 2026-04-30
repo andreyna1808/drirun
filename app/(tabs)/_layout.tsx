@@ -35,7 +35,6 @@ export default function TabLayout() {
         },
       }}
     >
-      {/* Home (agora home.tsx) */}
       <Tabs.Screen
         name="index"
         options={{
@@ -46,26 +45,6 @@ export default function TabLayout() {
         }}
       />
 
-      <Tabs.Screen name="calendar/bmi" options={{ href: null }} />
-
-      <Tabs.Screen name="pet/pet-gallery" options={{ href: null }} />
-      <Tabs.Screen name="pet/shop" options={{ href: null }} />
-
-      <Tabs.Screen name="settings/profile/index" options={{ href: null }} />
-      <Tabs.Screen name="settings/about/index" options={{ href: null }} />
-
-      {/* Métricas */}
-      <Tabs.Screen
-        name="metrics/index"
-        options={{
-          title: "Métricas",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="chart.bar.fill" color={color} />
-          ),
-        }}
-      />
-
-      {/* Calendário (inclui IMC) */}
       <Tabs.Screen
         name="calendar/index"
         options={{
@@ -75,8 +54,8 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="calendar/bmi" options={{ href: null }} />
 
-      {/* Pet */}
       <Tabs.Screen
         name="pet/index"
         options={{
@@ -114,14 +93,27 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="pet/pet-gallery" options={{ href: null }} />
+      <Tabs.Screen name="pet/shop" options={{ href: null }} />
 
-      {/* Configurações */}
       <Tabs.Screen
         name="settings/index"
         options={{
           title: "Config",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="gearshape.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen name="settings/profile" options={{ href: null }} />
+      <Tabs.Screen name="settings/about" options={{ href: null }} />
+
+      <Tabs.Screen
+        name="metrics"
+        options={{
+          title: "Métricas",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="chart.bar.fill" color={color} />
           ),
         }}
       />

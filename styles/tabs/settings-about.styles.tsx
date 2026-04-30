@@ -1,6 +1,8 @@
-import { StyleSheet, } from "react-native";
+import {
+    StyleSheet,
+} from "react-native";
 
-export const AboutStyles = (colors: any) => {
+export const SettingsAboutStyles = (colors: any) => {
     return StyleSheet.create({
         header: {
             flexDirection: "row",

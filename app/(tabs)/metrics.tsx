@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useApp, RunRecord } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
-import { MetricsStyles } from "./styles";
+import { MetricsStyles } from "../../styles/tabs/metrics.styles";
 
 const { width } = Dimensions.get("window");
 const CHART_WIDTH = width - 48;

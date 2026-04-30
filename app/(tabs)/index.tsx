@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   Dimensions,
 } from "react-native";
 import { router } from "expo-router";
@@ -13,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useApp, hasRunToday, getTodayRun } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
-import { LoggedStyles } from "./styles";
+import { LoggedStyles } from "@/styles/tabs/styles";
 
 const { width } = Dimensions.get("window");
 

@@ -128,3 +128,4 @@ export const SettingsStyles = (colors: any) => {
         dangerButtonText: { fontSize: 15, fontWeight: "700" },
     });
 }
+

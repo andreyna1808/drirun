@@ -26,6 +26,7 @@ import {
   type ShopItem,
 } from "@/lib/shopItems";
 import { ScreenContainer } from "@/components/screen-container";
+import { PetShopStyles } from "@/styles/tabs/pet-shop.styles";
 
 // ── Pacotes de gemas (IAP) ────────────────────────────────────────────────────
 const GEM_PACKAGES = [
@@ -115,7 +116,7 @@ export default function ShopScreen() {
     );
   }
 
-  const styles = createStyles(colors);
+  const styles = PetShopStyles(colors);
 
   return (
     <ScreenContainer>
@@ -307,138 +308,3 @@ export default function ShopScreen() {
   );
 }
 
-function createStyles(colors: any) {
-  return StyleSheet.create({
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-    },
-    backButton: { padding: 4 },
-    backText: { fontSize: 15, fontWeight: "600" },
-    headerTitle: { fontSize: 18, fontWeight: "800" },
-    gemsDisplay: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-    },
-    gemsText: { fontSize: 14, fontWeight: "700" },
-    tabRow: {
-      flexDirection: "row",
-      borderBottomWidth: 1,
-    },
-    tab: {
-      flex: 1,
-      paddingVertical: 12,
-      alignItems: "center",
-    },
-    tabText: { fontSize: 15, fontWeight: "600" },
-    categoryScroll: { maxHeight: 60 },
-    categoryContent: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      gap: 8,
-      flexDirection: "row",
-    },
-    categoryButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-      borderWidth: 1.5,
-    },
-    categoryEmoji: { fontSize: 14 },
-    categoryLabel: { fontSize: 12, fontWeight: "600" },
-    itemsGrid: {
-      padding: 12,
-      gap: 12,
-    },
-    itemCard: {
-      flex: 1,
-      margin: 4,
-      borderRadius: 16,
-      padding: 12,
-      alignItems: "center",
-      borderWidth: 1.5,
-      position: "relative",
-    },
-    rarityBadge: {
-      position: "absolute",
-      top: 8,
-      right: 8,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 8,
-    },
-    rarityText: { color: "#FFFFFF", fontSize: 9, fontWeight: "700" },
-    itemEmoji: { fontSize: 40, marginTop: 8, marginBottom: 8 },
-    itemName: { fontSize: 13, fontWeight: "700", textAlign: "center", marginBottom: 4 },
-    itemDesc: { fontSize: 11, textAlign: "center", lineHeight: 16, marginBottom: 8 },
-    ownedBadge: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 12,
-    },
-    ownedText: { fontSize: 11, fontWeight: "700" },
-    priceBadge: {
-      paddingHorizontal: 12,
-      paddingVertical: 4,
-      borderRadius: 12,
-    },
-    priceText: { fontSize: 13, fontWeight: "700" },
-    gemsContent: {
-      padding: 20,
-      gap: 16,
-    },
-    gemsTitle: { fontSize: 24, fontWeight: "800", textAlign: "center" },
-    gemsSubtitle: { fontSize: 14, textAlign: "center", lineHeight: 20 },
-    balanceCard: {
-      borderRadius: 16,
-      padding: 16,
-      alignItems: "center",
-      borderWidth: 1.5,
-    },
-    balanceLabel: { fontSize: 13, marginBottom: 4 },
-    balanceValue: { fontSize: 28, fontWeight: "900" },
-    freeGemsCard: {
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-    },
-    freeGemsTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
-    freeGemRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
-    freeGemEmoji: { fontSize: 20 },
-    freeGemText: { fontSize: 14, flex: 1 },
-    packagesTitle: { fontSize: 18, fontWeight: "700", marginTop: 8 },
-    gemPackage: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      gap: 12,
-    },
-    gemPackageEmoji: { fontSize: 28 },
-    gemPackageInfo: { flex: 1 },
-    gemPackageAmount: { fontSize: 16, fontWeight: "700" },
-    gemPackageBonus: { fontSize: 13, fontWeight: "600" },
-    gemPackagePrice: { fontSize: 13, marginTop: 2 },
-    buyButton: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 12,
-    },
-    buyButtonText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
-    iapDisclaimer: {
-      fontSize: 11,
-      textAlign: "center",
-      lineHeight: 18,
-      marginTop: 8,
-    },
-  });
-}

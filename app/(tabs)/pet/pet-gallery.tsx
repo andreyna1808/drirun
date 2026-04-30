@@ -18,6 +18,7 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { SHOP_ITEMS, getRarityColor, getRarityLabel, type ShopCategory } from "@/lib/shopItems";
 import { ScreenContainer } from "@/components/screen-container";
+import { PetGalleryStyles } from "@/styles/tabs/pet-gallery.styles";
 
 // Categorias para filtro
 const CATEGORIES: { key: ShopCategory | "all"; label: string; emoji: string }[] = [
@@ -55,7 +56,7 @@ export default function PetGalleryScreen() {
     dispatch({ type: "EQUIP_SHOP_ITEM", payload: { itemId, equip: !equipped } });
   }
 
-  const styles = createStyles(colors);
+  const styles = PetGalleryStyles(colors);
 
   return (
     <ScreenContainer>
@@ -67,7 +68,7 @@ export default function PetGalleryScreen() {
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>🎒 Minha Galeria</Text>
         <TouchableOpacity
           style={[styles.shopButton, { backgroundColor: colors.primary }]}
-          onPress={() => router.push("/shop")}
+          onPress={() => router.push("/pet/shop")}
         >
           <Text style={styles.shopButtonText}>🛒 Loja</Text>
         </TouchableOpacity>
@@ -138,7 +139,7 @@ export default function PetGalleryScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.goToShopButton, { backgroundColor: colors.primary }]}
-            onPress={() => router.push("/shop")}
+            onPress={() => router.push("/pet/shop")}
           >
             <Text style={styles.goToShopText}>Ir para a Loja 🛒</Text>
           </TouchableOpacity>
@@ -194,115 +195,4 @@ export default function PetGalleryScreen() {
       )}
     </ScreenContainer>
   );
-}
-
-function createStyles(colors: any) {
-  return StyleSheet.create({
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-    },
-    backButton: { padding: 4 },
-    backText: { fontSize: 15, fontWeight: "600" },
-    headerTitle: { fontSize: 18, fontWeight: "800" },
-    shopButton: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 12,
-    },
-    shopButtonText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
-    equippedSummary: {
-      padding: 12,
-      borderBottomWidth: 1,
-    },
-    equippedTitle: { fontSize: 13, fontWeight: "600", marginBottom: 8 },
-    equippedRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-    equippedBadge: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    equippedBadgeEmoji: { fontSize: 22 },
-    noEquipped: { fontSize: 13, fontStyle: "italic" },
-    categoryScroll: { maxHeight: 60 },
-    categoryContent: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      gap: 8,
-      flexDirection: "row",
-    },
-    categoryButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-      borderWidth: 1.5,
-    },
-    categoryEmoji: { fontSize: 14 },
-    categoryLabel: { fontSize: 12, fontWeight: "600" },
-    itemsGrid: { padding: 12, gap: 12 },
-    itemCard: {
-      flex: 1,
-      margin: 4,
-      borderRadius: 16,
-      padding: 12,
-      alignItems: "center",
-      borderWidth: 1.5,
-      position: "relative",
-    },
-    rarityBadge: {
-      position: "absolute",
-      top: 8,
-      right: 8,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 8,
-    },
-    rarityText: { color: "#FFFFFF", fontSize: 9, fontWeight: "700" },
-    equippedIndicator: {
-      position: "absolute",
-      top: 8,
-      left: 8,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    equippedIndicatorText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
-    itemEmoji: { fontSize: 40, marginTop: 8, marginBottom: 8 },
-    itemName: { fontSize: 13, fontWeight: "700", textAlign: "center", marginBottom: 8 },
-    actionBadge: {
-      paddingHorizontal: 14,
-      paddingVertical: 6,
-      borderRadius: 12,
-      borderWidth: 1,
-    },
-    actionText: { fontSize: 12, fontWeight: "700" },
-    emptyContainer: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 32,
-      gap: 12,
-    },
-    emptyEmoji: { fontSize: 64 },
-    emptyTitle: { fontSize: 20, fontWeight: "700", textAlign: "center" },
-    emptySubtitle: { fontSize: 14, textAlign: "center", lineHeight: 20 },
-    goToShopButton: {
-      marginTop: 8,
-      paddingHorizontal: 24,
-      paddingVertical: 12,
-      borderRadius: 16,
-    },
-    goToShopText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
-  });
 }

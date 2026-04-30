@@ -20,7 +20,7 @@ import {
   changeLanguage,
 } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import { SettingsStyles } from "./style";
+import { SettingsStyles } from "@/styles/tabs/settings.styles";
 
 export default function SettingsScreen() {
   const { state, dispatch } = useApp();

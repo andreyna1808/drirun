@@ -14,7 +14,7 @@ import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
-import { BmiStyles } from "./styles";
+import { BmiStyles } from "@/styles/tabs/calendar-bmi.styles";
 
 const { width } = Dimensions.get("window");
 
