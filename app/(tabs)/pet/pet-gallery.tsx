@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { SHOP_ITEMS, getRarityColor, getRarityLabel, type ShopCategory } from "@/lib/shopItems";
@@ -22,15 +23,16 @@ import { PetGalleryStyles } from "@/styles/tabs/pet-gallery.styles";
 
 // Categorias para filtro
 const CATEGORIES: { key: ShopCategory | "all"; label: string; emoji: string }[] = [
-  { key: "all",        label: "Todos",      emoji: "🎒" },
-  { key: "outfit",     label: "Roupas",     emoji: "👕" },
-  { key: "accessory",  label: "Acessórios", emoji: "👑" },
-  { key: "background", label: "Fundos",     emoji: "🖼️" },
-  { key: "furniture",  label: "Mobília",    emoji: "🛋️" },
-  { key: "color",      label: "Cores",      emoji: "🎨" },
+  { key: "all", label: "gallery_category_all", emoji: "🎒" },
+  { key: "outfit", label: "gallery_category_outfit", emoji: "👕" },
+  { key: "accessory", label: "gallery_category_accessory", emoji: "👑" },
+  { key: "background", label: "gallery_category_background", emoji: "🖼️" },
+  { key: "furniture", label: "gallery_category_furniture", emoji: "🛋️" },
+  { key: "color", label: "gallery_category_color", emoji: "🎨" },
 ];
 
 export default function PetGalleryScreen() {
+  const { t } = useTranslation();
   const { state, dispatch } = useApp();
   const colors = useColors();
   const [selectedCategory, setSelectedCategory] = useState<ShopCategory | "all">("all");
@@ -63,26 +65,26 @@ export default function PetGalleryScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={[styles.backText, { color: colors.primary }]}>← Voltar</Text>
+          <Text style={[styles.backText, { color: colors.primary }]}>← {t("gallery_back")}</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>🎒 Minha Galeria</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>🎒 {t("gallery_title")}</Text>
         <TouchableOpacity
           style={[styles.shopButton, { backgroundColor: colors.primary }]}
           onPress={() => router.push("/pet/shop")}
         >
-          <Text style={styles.shopButtonText}>🛒 Loja</Text>
+          <Text style={styles.shopButtonText}>🛒 {t("gallery_shop_button")}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Resumo dos itens equipados */}
       <View style={[styles.equippedSummary, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[styles.equippedTitle, { color: colors.foreground }]}>
-          Itens Equipados na Fênix:
+          {t("gallery_equipped_title")}
         </Text>
         <View style={styles.equippedRow}>
           {state.pet.ownedItems.filter((i) => i.equipped).length === 0 ? (
             <Text style={[styles.noEquipped, { color: colors.muted }]}>
-              Nenhum item equipado. Toque em um item para equipar!
+              {t("gallery_no_equipped")}
             </Text>
           ) : (
             state.pet.ownedItems
@@ -121,7 +123,7 @@ export default function PetGalleryScreen() {
               styles.categoryLabel,
               { color: selectedCategory === cat.key ? "#FFFFFF" : colors.muted },
             ]}>
-              {cat.label}
+              {t(cat.label)}
             </Text>
           </TouchableOpacity>
         )}
@@ -132,16 +134,16 @@ export default function PetGalleryScreen() {
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyEmoji}>🛒</Text>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            Nenhum item aqui ainda!
+            {t("gallery_empty_title")}
           </Text>
           <Text style={[styles.emptySubtitle, { color: colors.muted }]}>
-            Visite a loja para comprar itens para sua Fênix.
+            {t("gallery_empty_subtitle")}
           </Text>
           <TouchableOpacity
             style={[styles.goToShopButton, { backgroundColor: colors.primary }]}
             onPress={() => router.push("/pet/shop")}
           >
-            <Text style={styles.goToShopText}>Ir para a Loja 🛒</Text>
+            <Text style={styles.goToShopText}>🛒 {t("gallery_go_to_shop")}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -185,7 +187,7 @@ export default function PetGalleryScreen() {
                   { backgroundColor: equipped ? colors.primary : colors.surface, borderColor: equipped ? colors.primary : colors.border },
                 ]}>
                   <Text style={[styles.actionText, { color: equipped ? "#FFFFFF" : colors.muted }]}>
-                    {equipped ? "✓ Equipado" : "Equipar"}
+                    {equipped ? t("gallery_equipped_badge") : t("gallery_equip_badge")}
                   </Text>
                 </View>
               </TouchableOpacity>

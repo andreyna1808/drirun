@@ -369,4 +369,24 @@ export default {
   pet_state_dead_description: "The Phoenix succumbed to sadness. But she can rise from the ashes if you start running again!",
   pet_state_reborn_title: "Reborn Phoenix!",
   pet_state_reborn_description: "From the ashes, she rises! You're back! Keep it up and she'll get even stronger!",
+
+  // Pet Gallery
+  gallery_back: "Back",
+  gallery_title: "My Gallery",
+  gallery_shop_button: "Shop",
+  gallery_equipped_title: "Items equipped on Phoenix:",
+  gallery_no_equipped: "No items equipped. Tap an item to equip!",
+  gallery_empty_title: "No items here yet!",
+  gallery_empty_subtitle: "Visit the shop to buy items for your Phoenix.",
+  gallery_go_to_shop: "Go to Shop",
+  gallery_equipped_badge: "✓ Equipped",
+  gallery_equip_badge: "Equip",
+
+  // Gallery categories
+  gallery_category_all: "All",
+  gallery_category_outfit: "Outfits",
+  gallery_category_accessory: "Accessories",
+  gallery_category_background: "Backgrounds",
+  gallery_category_furniture: "Furniture",
+  gallery_category_color: "Colors",
 };

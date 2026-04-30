@@ -369,4 +369,24 @@ export default {
   pet_state_dead_description: "La Fénix sucumbió a la tristeza. Pero puede renacer de las cenizas si vuelves a correr.",
   pet_state_reborn_title: "¡Fénix Renacida!",
   pet_state_reborn_description: "¡De las cenizas, renace! ¡Has vuelto! Sigue así y se hará aún más fuerte.",
+
+  // Galería de Mascota
+  gallery_back: "Volver",
+  gallery_title: "Mi Galería",
+  gallery_shop_button: "Tienda",
+  gallery_equipped_title: "Objetos equipados en Fénix:",
+  gallery_no_equipped: "Ningún objeto equipado. ¡Toca un objeto para equiparlo!",
+  gallery_empty_title: "¡Aún no hay objetos!",
+  gallery_empty_subtitle: "Visita la tienda para comprar objetos para tu Fénix.",
+  gallery_go_to_shop: "Ir a la Tienda",
+  gallery_equipped_badge: "✓ Equipado",
+  gallery_equip_badge: "Equipar",
+
+  // Categorías de galería
+  gallery_category_all: "Todos",
+  gallery_category_outfit: "Ropa",
+  gallery_category_accessory: "Accesorios",
+  gallery_category_background: "Fondos",
+  gallery_category_furniture: "Muebles",
+  gallery_category_color: "Colores",
 };

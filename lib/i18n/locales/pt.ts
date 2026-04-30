@@ -366,4 +366,24 @@ export default {
   pet_state_dead_description: "A Fênix sucumbiu à tristeza. Mas ela pode renascer das cinzas se você voltar a correr!",
   pet_state_reborn_title: "Fênix Renascendo!",
   pet_state_reborn_description: "Das cinzas, ela renasce! Você voltou! Continue assim e ela ficará ainda mais forte!",
+
+  // Galeria do Pet
+  gallery_back: "Voltar",
+  gallery_title: "Minha Galeria",
+  gallery_shop_button: "Loja",
+  gallery_equipped_title: "Itens Equipados na Fênix:",
+  gallery_no_equipped: "Nenhum item equipado. Toque em um item para equipar!",
+  gallery_empty_title: "Nenhum item aqui ainda!",
+  gallery_empty_subtitle: "Visite a loja para comprar itens para sua Fênix.",
+  gallery_go_to_shop: "Ir para a Loja",
+  gallery_equipped_badge: "✓ Equipado",
+  gallery_equip_badge: "Equipar",
+
+  // Categorias da galeria (já existem no shop, mas vou listar para garantir)
+  gallery_category_all: "Todos",
+  gallery_category_outfit: "Roupas",
+  gallery_category_accessory: "Acessórios",
+  gallery_category_background: "Fundos",
+  gallery_category_furniture: "Mobília",
+  gallery_category_color: "Cores",
 };
