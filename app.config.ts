@@ -56,7 +56,7 @@ const config: ExpoConfig = {
       "react-native-google-mobile-ads",
       {
         androidAppId: process.env.ANDROID_ADMOB_APP_ID,
-        // iosAppId: process.env.IOS_ADMOB_APP_ID,
+        iosAppId: process.env.IOS_ADMOB_APP_ID,
       }
     ],
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import {
     RewardedAd,
     RewardedAdEventType,
@@ -6,14 +7,19 @@ import {
 } from "react-native-google-mobile-ads";
 
 const IS_DEV = __DEV__;
+const IS_IOS = Platform.OS === "ios";
 
 export const BANNER_AD_UNIT_ID = IS_DEV
     ? TestIds.BANNER
-    : process.env.ANDROID_ADMOB_BANNER_ID!;
+    : IS_IOS
+        ? process.env.IOS_ADMOB_BANNER_ID!
+        : process.env.ANDROID_ADMOB_BANNER_ID!;
 
 export const REWARDED_AD_UNIT_ID = IS_DEV
     ? TestIds.REWARDED
-    : process.env.ANDROID_ADMOB_REWARDED_ID!;
+    : IS_IOS
+        ? process.env.IOS_ADMOB_REWARDED_ID!
+        : process.env.ANDROID_ADMOB_REWARDED_ID!;
 
 export function useRewardedAd(onRewarded: () => void) {
     const [loaded, setLoaded] = useState(false);
