@@ -28,24 +28,7 @@ import {
 } from "@/lib/shopItems";
 import { ScreenContainer } from "@/components/screen-container";
 import { PetShopStyles } from "@/styles/tabs/pet-shop.styles";
-
-// ── Pacotes de gemas (IAP) ────────────────────────────────────────────────────
-const GEM_PACKAGES = [
-  { id: "gems_50", gems: 50, price: "R$ 10,00", emoji: "💎", bonus: "" },
-  { id: "gems_150", gems: 150, price: "R$ 25,00", emoji: "💎💎", bonus: "+10%" },
-  { id: "gems_250", gems: 250, price: "R$ 40,00", emoji: "💎💎💎", bonus: "+20%" },
-  { id: "gems_500", gems: 500, price: "R$ 70,00", emoji: "💎💎💎💎", bonus: "+30%" },
-];
-
-// ── Categorias da loja ────────────────────────────────────────────────────────
-const CATEGORIES: { key: ShopCategory | "all"; label: string; emoji: string }[] = [
-  { key: "all", label: "shop_category_all", emoji: "🛒" },
-  { key: "outfit", label: "shop_category_outfit", emoji: "👕" },
-  { key: "accessory", label: "shop_category_accessory", emoji: "👑" },
-  { key: "background", label: "shop_category_background", emoji: "🖼️" },
-  { key: "furniture", label: "shop_category_furniture", emoji: "🛋️" },
-  { key: "color", label: "shop_category_color", emoji: "🎨" },
-];
+import { CATEGORIES, GEM_PACKAGES } from "@/utils/pet";
 
 export default function ShopScreen() {
   const { t } = useTranslation();

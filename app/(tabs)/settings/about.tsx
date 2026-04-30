@@ -27,7 +27,6 @@ const SUPPORT_URL = extra!.ORIGIN_HELP_APP as string;
 
 const APP_VERSION = "1.0.0";
 
-
 export default function AboutScreen() {
   const { t } = useTranslation();
   const colors = useColors();

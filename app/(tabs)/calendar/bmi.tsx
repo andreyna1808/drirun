@@ -12,7 +12,8 @@ import { ScreenContainer } from "@/components/screen-container";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { BmiStyles } from "@/styles/tabs/calendar-bmi.styles";
-import { BMI_CATEGORIES_DATA, BMIGauge, calculateBMI, calculateIdealWeight, getBMICategoryData } from "@/components/calendar/bmi.components";
+import { BMIGauge } from "@/components/calendar/bmi-gauge";
+import { BMI_CATEGORIES_DATA, calculateBMI, calculateIdealWeight, getBMICategoryData } from "@/utils/calendar";
 
 export default function BMIScreen() {
   const { t } = useTranslation();

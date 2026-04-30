@@ -1,16 +1,9 @@
-/**
- * pet-gallery.tsx
- * Galeria do Pet — exibe os itens possuídos pelo usuário e permite equipar/remover.
- * Acessível a partir da aba Pet.
- */
 import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   FlatList,
-  StyleSheet,
-  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -20,16 +13,7 @@ import { useColors } from "@/hooks/use-colors";
 import { SHOP_ITEMS, getRarityColor, getRarityLabel, type ShopCategory } from "@/lib/shopItems";
 import { ScreenContainer } from "@/components/screen-container";
 import { PetGalleryStyles } from "@/styles/tabs/pet-gallery.styles";
-
-// Categorias para filtro
-const CATEGORIES: { key: ShopCategory | "all"; label: string; emoji: string }[] = [
-  { key: "all", label: "gallery_category_all", emoji: "🎒" },
-  { key: "outfit", label: "gallery_category_outfit", emoji: "👕" },
-  { key: "accessory", label: "gallery_category_accessory", emoji: "👑" },
-  { key: "background", label: "gallery_category_background", emoji: "🖼️" },
-  { key: "furniture", label: "gallery_category_furniture", emoji: "🛋️" },
-  { key: "color", label: "gallery_category_color", emoji: "🎨" },
-];
+import { CATEGORIES } from "@/utils/pet";
 
 export default function PetGalleryScreen() {
   const { t } = useTranslation();

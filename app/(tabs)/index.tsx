@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
 } from "react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -15,57 +14,8 @@ import { ScreenContainer } from "@/components/screen-container";
 import { LoggedStyles } from "@/styles/tabs/styles";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
-
-const { width } = Dimensions.get("window");
-
-// ─── Frases motivacionais (agora por chave) ─────────────────────────────────
-
-const MOTIVATIONAL_PHRASE_KEYS = [
-  "home_motivational_1",
-  "home_motivational_2",
-  "home_motivational_3",
-  "home_motivational_4",
-  "home_motivational_5",
-  "home_motivational_6",
-  "home_motivational_7",
-  "home_motivational_8",
-  "home_motivational_9",
-  "home_motivational_10",
-];
-
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}min`;
-  if (m > 0) return `${m}min ${String(s).padStart(2, "0")}s`;
-  return `${s}s`;
-}
-
-function formatPace(paceSecondsPerKm: number): string {
-  if (!isFinite(paceSecondsPerKm) || paceSecondsPerKm <= 0) return "--:--";
-  const m = Math.floor(paceSecondsPerKm / 60);
-  const s = Math.round(paceSecondsPerKm % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function calculateStreak(runs: Array<{ date: string }>): number {
-  if (runs.length === 0) return 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  let streak = 0;
-  const checkDate = new Date(today);
-  while (true) {
-    const dateStr = checkDate.toISOString().split("T")[0];
-    const hasRun = runs.some((r) => r.date === dateStr);
-    if (!hasRun) break;
-    streak++;
-    checkDate.setDate(checkDate.getDate() - 1);
-  }
-  return streak;
-}
-
-// ─── Componente principal ─────────────────────────────────────────────────────
+import { calculateStreak, MOTIVATIONAL_PHRASE_KEYS, formatPace, formatDuration } from "@/utils/tabs";
+import { RunMetricRow } from "@/components/run-metric-row";
 
 export default function LoggedHomeScreen() {
   const { t, i18n } = useTranslation();
@@ -218,20 +168,3 @@ export default function LoggedHomeScreen() {
     </ScreenContainer>
   );
 }
-
-// ─── Componente auxiliar ──────────────────────────────────────────────────────
-function RunMetricRow({ label, value, colors, isLast = false }: { label: string; value: string; colors: any; isLast?: boolean }) {
-  return (
-    <View style={{
-      flexDirection: "row",
-      justifyContent: "space-between",
-      paddingVertical: 12,
-      borderBottomWidth: isLast ? 0 : 1,
-      borderBottomColor: colors.border,
-    }}>
-      <Text style={{ color: colors.muted, fontSize: 14 }}>{label}</Text>
-      <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{value}</Text>
-    </View>
-  );
-}
-

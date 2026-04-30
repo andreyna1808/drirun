@@ -5,206 +5,20 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Animated,
   Alert,
   Modal,
 } from "react-native";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useApp, PetState, calculatePetState, calculateDaysSinceLastRun } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
 import { PetStyles } from "@/styles/tabs/pet.styles";
 import { BANNER_AD_UNIT_ID, useRewardedAd } from "@/hooks/use-ads";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
-
-// ─── Configuração dos estados do pet ─────────────────────────────────────────
-
-interface PetStateConfig {
-  emoji: string;
-  title: string;        // chave de tradução
-  description: string;  // chave de tradução
-  color: string;
-  animation: "float" | "shake" | "pulse" | "spin" | "none";
-}
-
-/** Configuração visual para cada estado da Fênix (textos vêm do i18n) */
-const PET_STATES: Record<PetState, PetStateConfig> = {
-  egg: {
-    emoji: "🥚",
-    title: "pet_state_egg_title",
-    description: "pet_state_egg_description",
-    color: "#FFD700",
-    animation: "pulse",
-  },
-  hatchling: {
-    emoji: "🐣",
-    title: "pet_state_hatchling_title",
-    description: "pet_state_hatchling_description",
-    color: "#FF8C5A",
-    animation: "float",
-  },
-  young: {
-    emoji: "🦅",
-    title: "pet_state_young_title",
-    description: "pet_state_young_description",
-    color: "#FF6B35",
-    animation: "float",
-  },
-  adult: {
-    emoji: "🔥",
-    title: "pet_state_adult_title",
-    description: "pet_state_adult_description",
-    color: "#FFD700",
-    animation: "pulse",
-  },
-  free: {
-    emoji: "✨",
-    title: "pet_state_free_title",
-    description: "pet_state_free_description",
-    color: "#FFD700",
-    animation: "spin",
-  },
-  sad: {
-    emoji: "😢",
-    title: "pet_state_sad_title",
-    description: "pet_state_sad_description",
-    color: "#6B7280",
-    animation: "none",
-  },
-  depressed: {
-    emoji: "😞",
-    title: "pet_state_depressed_title",
-    description: "pet_state_depressed_description",
-    color: "#4B5563",
-    animation: "shake",
-  },
-  dead: {
-    emoji: "💀",
-    title: "pet_state_dead_title",
-    description: "pet_state_dead_description",
-    color: "#374151",
-    animation: "none",
-  },
-  reborn: {
-    emoji: "🌟",
-    title: "pet_state_reborn_title",
-    description: "pet_state_reborn_description",
-    color: "#FF6B35",
-    animation: "spin",
-  },
-};
-
-// ─── Componente da Fênix animada ──────────────────────────────────────────────
-
-function PhoenixDisplay({
-  petState,
-  petName,
-  colors,
-  t,
-}: {
-  petState: PetState;
-  petName: string;
-  colors: any;
-  t: any;
-}) {
-  const config = PET_STATES[petState];
-  const animValue = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    let animation: Animated.CompositeAnimation | null = null;
-
-    if (config.animation === "float") {
-      animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(animValue, { toValue: -12, duration: 1200, useNativeDriver: true }),
-          Animated.timing(animValue, { toValue: 0, duration: 1200, useNativeDriver: true }),
-        ])
-      );
-    } else if (config.animation === "pulse") {
-      animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(animValue, { toValue: 1, duration: 800, useNativeDriver: true }),
-          Animated.timing(animValue, { toValue: 0, duration: 800, useNativeDriver: true }),
-        ])
-      );
-    } else if (config.animation === "shake") {
-      animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(animValue, { toValue: -6, duration: 100, useNativeDriver: true }),
-          Animated.timing(animValue, { toValue: 6, duration: 100, useNativeDriver: true }),
-          Animated.timing(animValue, { toValue: -6, duration: 100, useNativeDriver: true }),
-          Animated.timing(animValue, { toValue: 0, duration: 100, useNativeDriver: true }),
-          Animated.delay(2000),
-        ])
-      );
-    } else if (config.animation === "spin") {
-      animation = Animated.loop(
-        Animated.timing(animValue, { toValue: 1, duration: 3000, useNativeDriver: true })
-      );
-    }
-
-    animation?.start();
-    return () => {
-      animation?.stop();
-      animValue.setValue(0);
-    };
-  }, [petState]);
-
-  const animStyle = (() => {
-    if (config.animation === "float" || config.animation === "shake") {
-      return { transform: [{ translateY: animValue }] };
-    }
-    if (config.animation === "pulse") {
-      return {
-        transform: [{
-          scale: animValue.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }),
-        }],
-      };
-    }
-    if (config.animation === "spin") {
-      return {
-        transform: [{
-          rotate: animValue.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }),
-        }],
-      };
-    }
-    return {};
-  })();
-
-  return (
-    <View style={{ alignItems: "center", paddingVertical: 24 }}>
-      <View
-        style={{
-          width: 160,
-          height: 160,
-          borderRadius: 80,
-          backgroundColor: config.color + "20",
-          alignItems: "center",
-          justifyContent: "center",
-          borderWidth: 3,
-          borderColor: config.color + "40",
-          marginBottom: 16,
-        }}
-      >
-        <Animated.Text style={[{ fontSize: 80 }, animStyle]}>
-          {config.emoji}
-        </Animated.Text>
-      </View>
-
-      <Text style={{ fontSize: 22, fontWeight: "800", color: config.color, marginBottom: 4 }}>
-        {petName}
-      </Text>
-
-      <Text style={{ fontSize: 15, color: "#6B7280", marginBottom: 8 }}>
-        {t(config.title)}
-      </Text>
-    </View>
-  );
-}
-
-// ─── Componente principal ─────────────────────────────────────────────────────
+import { PET_STATES } from "@/utils/pet";
+import { PhoenixDisplay } from "@/components/pet/phoenix-display";
+import { StatCard } from "@/components/pet/stat-card";
 
 export default function PetScreen() {
   const { t } = useTranslation();
@@ -483,39 +297,5 @@ export default function PetScreen() {
         </View>
       </Modal>
     </ScreenContainer>
-  );
-}
-
-// ─── Componente de card de estatística ───────────────────────────────────────
-
-function StatCard({
-  value,
-  label,
-  color,
-  colors,
-}: {
-  value: string;
-  label: string;
-  color: string;
-  colors: any;
-}) {
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: colors.surface,
-        borderRadius: 12,
-        padding: 12,
-        alignItems: "center",
-        marginHorizontal: 4,
-        borderWidth: 1,
-        borderColor: colors.border,
-      }}
-    >
-      <Text style={{ fontSize: 20, fontWeight: "800", color }}>{value}</Text>
-      <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2, textAlign: "center" }}>
-        {label}
-      </Text>
-    </View>
   );
 }

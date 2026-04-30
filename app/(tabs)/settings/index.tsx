@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   TextInput,
   Alert,
   Switch,
@@ -21,6 +20,7 @@ import {
 } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { SettingsStyles } from "@/styles/tabs/settings.styles";
+import { SectionHeader } from "@/components/settings/section-header";
 
 export default function SettingsScreen() {
   const { state, dispatch } = useApp();
@@ -29,6 +29,9 @@ export default function SettingsScreen() {
   const [goalDaysInput, setGoalDaysInput] = useState(String(state.goalDays));
   const [editingGoal, setEditingGoal] = useState(false);
   const [currentLang, setCurrentLang] = useState<SupportedLanguage>(i18n.language as SupportedLanguage);
+  const styles = SettingsStyles(colors);
+  const notifEnabled = state.notifications?.enabled ?? false;
+  const notifHour = state.notifications?.hour ?? "08";
 
   function handleGoalChange(text: string) {
     setGoalDaysInput(text.replace(/[^0-9]/g, ""));
@@ -158,10 +161,6 @@ export default function SettingsScreen() {
       ]
     );
   }
-
-  const styles = SettingsStyles(colors);
-  const notifEnabled = state.notifications?.enabled ?? false;
-  const notifHour = state.notifications?.hour ?? "08";
 
   return (
     <ScreenContainer>
@@ -386,37 +385,3 @@ export default function SettingsScreen() {
     </ScreenContainer>
   );
 }
-
-// ── Componentes auxiliares (inalterados) ─────────────────────────────────────
-function SectionHeader({ title, colors }: { title: string; colors: any }) {
-  return (
-    <Text style={{
-      fontSize: 12,
-      fontWeight: "700",
-      color: colors.muted,
-      textTransform: "uppercase",
-      letterSpacing: 0.8,
-      marginTop: 20,
-      marginBottom: 8,
-      marginLeft: 4,
-    }}>
-      {title}
-    </Text>
-  );
-}
-
-function InfoRow({ label, value, colors, isLast = false }: { label: string; value: string; colors: any; isLast?: boolean }) {
-  return (
-    <View style={{
-      flexDirection: "row",
-      justifyContent: "space-between",
-      paddingVertical: 12,
-      borderBottomWidth: isLast ? 0 : 1,
-      borderBottomColor: colors.border,
-    }}>
-      <Text style={{ color: colors.muted, fontSize: 14 }}>{label}</Text>
-      <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{value}</Text>
-    </View>
-  );
-}
-

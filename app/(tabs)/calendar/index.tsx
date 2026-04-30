@@ -11,8 +11,9 @@ import { ScreenContainer } from "@/components/screen-container";
 import { CalendarStyles, CELL_SIZE } from "@/styles/tabs/calendar.styles";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
-import { BMI_CATEGORIES, getBMICategory } from "@/components/calendar/bmi.components";
-import { LegendItem, StatBox } from "@/components/calendar/index.components";
+import { StatBox } from "@/components/calendar/stat-box";
+import { BMI_CATEGORIES, getBMICategory } from "@/utils/calendar";
+import { LegendItem } from "@/components/calendar/legend-item";
 
 export default function CalendarScreen() {
   const { t } = useTranslation();
