@@ -476,4 +476,11 @@ export default {
   watch_ad_confirm_message: "Assista um anúncio curto e ganhe +25 💎 de bônus!",
   watch_ad_cancel: "Agora não",
   watch_ad_confirm_button: "Assistir e ganhar 25 💎",
+
+  // Tracking
+  tracking_continue: "Continuar correndo",
+  tracking_short_run_title: "Corrida muito curta",
+  tracking_short_run_message: "Você precisa percorrer pelo menos 100 metros para registrar a atividade.",
+  tracking_finish_confirm_title: "Finalizar corrida?",
+  tracking_finish_confirm_message: "Distância: {{distance}} km",
 };

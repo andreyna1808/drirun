@@ -479,4 +479,11 @@ export default {
   watch_ad_confirm_message: "Watch a short ad and earn +25 💎 bonus!",
   watch_ad_cancel: "Not now",
   watch_ad_confirm_button: "Watch and earn 25 💎",
+
+  // Tracking
+  tracking_continue: "Keep running",
+  tracking_short_run_title: "Run too short",
+  tracking_short_run_message: "You need to cover at least 100 meters to record the activity.",
+  tracking_finish_confirm_title: "Finish run?",
+  tracking_finish_confirm_message: "Distance: {{distance}} km",
 };

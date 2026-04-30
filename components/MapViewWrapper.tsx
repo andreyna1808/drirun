@@ -1,9 +1,5 @@
-/**
- * MapViewWrapper.tsx
- * Wrapper para o MapView que funciona em todas as plataformas.
- * No web, exibe uma mensagem de que o mapa só funciona no app nativo.
- */
 import { Platform, View, Text, StyleSheet } from "react-native";
+import maps from "react-native-maps";
 
 // Importação condicional para evitar erro no web
 let MapView: any = null;

@@ -479,4 +479,11 @@ export default {
   watch_ad_confirm_message: "¡Mira un anuncio corto y gana +25 💎 de bonificación!",
   watch_ad_cancel: "Ahora no",
   watch_ad_confirm_button: "Ver y ganar 25 💎",
+
+  // Seguimiento de carrera
+  tracking_continue: "Seguir corriendo",
+  tracking_short_run_title: "Carrera demasiado corta",
+  tracking_short_run_message: "Debes recorrer al menos 100 metros para registrar la actividad.",
+  tracking_finish_confirm_title: "¿Finalizar carrera?",
+  tracking_finish_confirm_message: "Distancia: {{distance}} km",
 };

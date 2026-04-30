@@ -13,6 +13,7 @@ import * as Location from "expo-location";
 import { useKeepAwake } from "expo-keep-awake";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useApp, RunRecord } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { TrackingStyles } from "@/styles/tracking.styles";
@@ -83,11 +84,10 @@ export default function TrackingScreen() {
   // Mantém a tela sempre ligada durante a corrida
   useKeepAwake();
 
+  const { t } = useTranslation();
   const { state, dispatch } = useApp();
   const colors = useColors();
   const mapRef = useRef<MapView>(null);
-
-  console.log("OIEEEEEEEEEEEEEEEEEEEEEEEEE:", state);
 
   // ── Estado da corrida ──────────────────────────────────────────────────────
   const [isRunning, setIsRunning] = useState(false);
@@ -113,7 +113,7 @@ export default function TrackingScreen() {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setLocationError("Permissão de localização negada. Ative nas configurações.");
+        setLocationError(t("tracking_permission_denied"));
         return;
       }
       setHasPermission(true);
@@ -149,7 +149,7 @@ export default function TrackingScreen() {
 
   const startRun = useCallback(async () => {
     if (!hasPermission) {
-      Alert.alert("Permissão necessária", "Ative a localização para iniciar a corrida.");
+      Alert.alert(t("tracking_permission_title"), t("tracking_permission_msg"));
       return;
     }
 
@@ -212,7 +212,7 @@ export default function TrackingScreen() {
         }, 500);
       }
     );
-  }, [hasPermission]);
+  }, [hasPermission, t]);
 
   // ── Pausar/Retomar ─────────────────────────────────────────────────────────
 
@@ -281,22 +281,22 @@ export default function TrackingScreen() {
     // Distância mínima de 100m para validar a corrida
     if (distanceRef.current < 100) {
       Alert.alert(
-        "Corrida muito curta",
-        "Você precisa percorrer pelo menos 100 metros para registrar a atividade.",
-        [{ text: "Continuar correndo" }, { text: "Cancelar", onPress: cancelRun, style: "destructive" }]
+        t("tracking_short_run_title"),
+        t("tracking_short_run_message"),
+        [{ text: t("tracking_continue"), style: "cancel" }, { text: t("tracking_cancel"), onPress: cancelRun, style: "destructive" }]
       );
       return;
     }
 
     Alert.alert(
-      "Finalizar corrida?",
-      `Distância: ${(distanceRef.current / 1000).toFixed(2)} km`,
+      t("tracking_finish_confirm_title"),
+      t("tracking_finish_confirm_message", { distance: (distanceRef.current / 1000).toFixed(2) }),
       [
-        { text: "Continuar", style: "cancel" },
-        { text: "Finalizar", onPress: confirmFinish },
+        { text: t("tracking_continue"), style: "cancel" },
+        { text: t("tracking_finish"), onPress: confirmFinish },
       ]
     );
-  }, [cancelRun, confirmFinish]);
+  }, [cancelRun, confirmFinish, t]);
 
   // ── Métricas calculadas ────────────────────────────────────────────────────
 
@@ -343,37 +343,37 @@ export default function TrackingScreen() {
       ) : (
         <View style={styles.mapPlaceholder}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.mapPlaceholderText, { color: colors.muted }]}>Aguardando localização...</Text>
+          <Text style={[styles.mapPlaceholderText, { color: colors.muted }]}>{t("tracking_waiting_gps")}</Text>
         </View>
       )}
 
       <View style={[styles.metricsContainer, { backgroundColor: colors.card }]}>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: colors.foreground }]}>{formattedDistance}</Text>
-          <Text style={[styles.metricLabel, { color: colors.muted }]}>KM</Text>
+          <Text style={[styles.metricLabel, { color: colors.muted }]}>{t("tracking_distance")}</Text>
         </View>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: colors.foreground }]}>{formattedDuration}</Text>
-          <Text style={[styles.metricLabel, { color: colors.muted }]}>Tempo</Text>
+          <Text style={[styles.metricLabel, { color: colors.muted }]}>{t("tracking_time")}</Text>
         </View>
         <View style={styles.metricItem}>
           <Text style={[styles.metricValue, { color: colors.foreground }]}>{formattedPace}</Text>
-          <Text style={[styles.metricLabel, { color: colors.muted }]}>Pace</Text>
+          <Text style={[styles.metricLabel, { color: colors.muted }]}>{t("tracking_pace")}</Text>
         </View>
       </View>
 
       <View style={styles.controlsContainer}>
         {!isRunning ? (
           <TouchableOpacity style={[styles.controlButton, styles.startButton, { backgroundColor: colors.primary }]} onPress={startRun}>
-            <Text style={styles.controlButtonText}>INICIAR</Text>
+            <Text style={styles.controlButtonText}>{t("tracking_start")}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.runningControls}>
             <TouchableOpacity style={[styles.controlButton, styles.pauseButton, { backgroundColor: colors.accent }]} onPress={togglePause}>
-              <Text style={styles.controlButtonText}>{isPaused ? "RETOMAR" : "PAUSAR"}</Text>
+              <Text style={styles.controlButtonText}>{isPaused ? t("tracking_resume") : t("tracking_pause")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.controlButton, styles.finishButton, { backgroundColor: colors.error }]} onPress={finishRun}>
-              <Text style={styles.controlButtonText}>FINALIZAR</Text>
+              <Text style={styles.controlButtonText}>{t("tracking_finish")}</Text>
             </TouchableOpacity>
           </View>
         )}
