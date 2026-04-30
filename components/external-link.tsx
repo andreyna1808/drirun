@@ -11,12 +11,11 @@ export function ExternalLink({ href, ...rest }: Props) {
       {...rest}
       href={href}
       onPress={async (event) => {
-        if (process.env.EXPO_OS !== "web") {
-          event.preventDefault();
-          await openBrowserAsync(href, {
-            presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
-          });
-        }
+        event.preventDefault();
+        await openBrowserAsync(href, {
+          presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
+        });
+
       }}
     />
   );

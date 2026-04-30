@@ -1,26 +1,14 @@
-/**
- * run-summary.tsx
- * Tela de celebracao pos-corrida do DriRun.
- * Exibe: animacao da Fenix feliz, metricas da corrida, progresso da meta,
- * gemas ganhas e opcao de assistir anuncio para ganhar mais gemas.
- */
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
-  Dimensions,
   Animated,
   Alert,
-  Platform,
 } from "react-native";
-import { MapFallback } from "@/components/MapViewWrapper";
-// Importacao condicional para evitar erro no web
-const MapView = Platform.OS !== "web" ? require("react-native-maps").default : null;
-const Polyline = Platform.OS !== "web" ? require("react-native-maps").Polyline : null;
-const Marker = Platform.OS !== "web" ? require("react-native-maps").Marker : null;
+import MapView, { Marker, Polyline } from "react-native-maps";
+
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
@@ -28,8 +16,6 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { RunSummaryStyles } from "@/styles/run-summary.styles";
 import { useRewardedAd } from "@/hooks/use-ads";
-
-const { width } = Dimensions.get("window");
 
 /** Formata segundos em string legivel */
 function formatDuration(seconds: number): string {
@@ -296,30 +282,26 @@ export default function RunSummaryScreen() {
           {hasRoute && (
             <View style={[styles.mapCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.metricsTitle, { color: colors.foreground }]}>🗺️ {t("route_title")}</Text>
-              {Platform.OS !== "web" && MapView ? (
-                <MapView
-                  style={styles.map}
-                  region={mapRegion}
-                  scrollEnabled={false}
-                  zoomEnabled={false}
-                >
-                  {Polyline && (
-                    <Polyline
-                      coordinates={route}
-                      strokeColor={colors.primary}
-                      strokeWidth={4}
-                    />
-                  )}
-                  {Marker && route.length > 0 && (
-                    <>
-                      <Marker coordinate={route[0]} title={t("marker_start")} pinColor="green" />
-                      <Marker coordinate={route[route.length - 1]} title={t("marker_end")} pinColor="red" />
-                    </>
-                  )}
-                </MapView>
-              ) : (
-                <MapFallback />
-              )}
+              <MapView
+                style={styles.map}
+                region={mapRegion}
+                scrollEnabled={false}
+                zoomEnabled={false}
+              >
+                {Polyline && (
+                  <Polyline
+                    coordinates={route}
+                    strokeColor={colors.primary}
+                    strokeWidth={4}
+                  />
+                )}
+                {Marker && route.length > 0 && (
+                  <>
+                    <Marker coordinate={route[0]} title={t("marker_start")} pinColor="green" />
+                    <Marker coordinate={route[route.length - 1]} title={t("marker_end")} pinColor="red" />
+                  </>
+                )}
+              </MapView>
             </View>
           )}
 
