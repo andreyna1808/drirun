@@ -173,14 +173,9 @@ export default function OnboardingScreen() {
   };
 
   // Notificações
-  async function requestNotificationPermission(): Promise<boolean> {
-    try {
-      const { status } = await Notifications.requestPermissionsAsync();
-      return status === "granted";
-    } catch { return false; }
-  }
   async function scheduleNotification(petName: string, userName: string, time: Date) {
     try {
+      const Notifications = await import('expo-notifications');
       await Notifications.cancelAllScheduledNotificationsAsync();
       const hour = time.getHours();
       const minute = time.getMinutes();
@@ -200,6 +195,18 @@ export default function OnboardingScreen() {
       console.warn("Erro ao agendar notificação:", e);
     }
   }
+
+  async function requestNotificationPermission(): Promise<boolean> {
+    try {
+      const Notifications = await import('expo-notifications');
+      const { status } = await Notifications.requestPermissionsAsync();
+      return status === "granted";
+    } catch {
+      return false;
+    }
+  }
+
+
   async function handleAllowNotifications() {
     const granted = await requestNotificationPermission();
     if (granted) setNotificationsEnabled(true);
@@ -230,7 +237,7 @@ export default function OnboardingScreen() {
 
     // Dispara a action que atualiza o estado global e persiste
 
-    console.log("profile:", {profile, goalDays, notificationsEnabled, selectedTime});
+    console.log("profile:", { profile, goalDays, notificationsEnabled, selectedTime });
     dispatch({
       type: "COMPLETE_ONBOARDING",
       payload: {
