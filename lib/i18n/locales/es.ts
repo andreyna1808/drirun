@@ -426,4 +426,20 @@ export default {
   shop_packages_title: "Paquetes de Gemas",
   shop_buy_button: "Comprar",
   shop_disclaimer: "Pagos procesados por App Store / Google Play. Las gemas solo son válidas dentro de esta aplicación.",
+
+  // Funcionalidades (pantalla de bienvenida)
+  feature_gps: "Registra tus carreras con GPS",
+  feature_pet: "Cuida de tu Fénix virtual",
+  feature_stats: "Sigue tu evolución",
+  feature_goals: "Define y alcanza tus metas",
+  feature_gems: "Gana gemas y personaliza tu mascota",
+
+  // Onboarding (adicional)
+  onboarding_challenge_preview: "Desafío de {{days}} días • ¡Gana 25 💎 por día!",
+
+  // Notificaciones
+  notifications_enabled: "¡Notificaciones activadas!",
+  notifications_denied_message: "¡Está bien! Puedes activar las notificaciones más tarde en Ajustes.",
+  permission_denied_title: "Permiso Denegado",
+  permission_denied_message: "No se pudieron activar las notificaciones. Puedes activarlas más tarde en Ajustes.",
 };

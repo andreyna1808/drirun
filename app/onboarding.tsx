@@ -175,7 +175,6 @@ export default function OnboardingScreen() {
   // Notificações
   async function scheduleNotification(petName: string, userName: string, time: Date) {
     try {
-      const Notifications = await import('expo-notifications');
       await Notifications.cancelAllScheduledNotificationsAsync();
       const hour = time.getHours();
       const minute = time.getMinutes();
@@ -198,7 +197,6 @@ export default function OnboardingScreen() {
 
   async function requestNotificationPermission(): Promise<boolean> {
     try {
-      const Notifications = await import('expo-notifications');
       const { status } = await Notifications.requestPermissionsAsync();
       return status === "granted";
     } catch {
@@ -206,13 +204,12 @@ export default function OnboardingScreen() {
     }
   }
 
-
   async function handleAllowNotifications() {
     const granted = await requestNotificationPermission();
     if (granted) setNotificationsEnabled(true);
     else Alert.alert(
-      "Permissão Negada",
-      "Não foi possível ativar notificações. Você pode ativá-las depois nas Configurações.",
+      t("permission_denied_title"),
+      t("permission_denied_message"),
       [{ text: t("ok"), onPress: () => setNotificationsEnabled(false) }]
     );
   }
@@ -220,7 +217,7 @@ export default function OnboardingScreen() {
     setNotificationsEnabled(false);
   }
 
-  // ⭐ HANDLE FINISH CORRIGIDO – salva e navega imediatamente
+  // HANDLE FINISH – salva e navega imediatamente
   const handleFinish = useCallback(async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const profile = {
@@ -235,9 +232,6 @@ export default function OnboardingScreen() {
       await scheduleNotification("Meu Pet", profile.name, selectedTime);
     }
 
-    // Dispara a action que atualiza o estado global e persiste
-
-    console.log("profile:", { profile, goalDays, notificationsEnabled, selectedTime });
     dispatch({
       type: "COMPLETE_ONBOARDING",
       payload: {
@@ -249,11 +243,19 @@ export default function OnboardingScreen() {
           : null,
       },
     });
-
-    // Navega programaticamente para a home (não depende mais do useEffect)
   }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch]);
 
-  // RENDERIZAÇÃO DAS ETAPAS (mantida integralmente)
+  const styles = OnboardingStyles(colors);
+
+  // ─── Features (traduzidas) ───
+  const features = [
+    { icon: "🏃", textKey: "feature_gps" },
+    { icon: "🔥", textKey: "feature_pet" },
+    { icon: "📊", textKey: "feature_stats" },
+    { icon: "🎯", textKey: "feature_goals" },
+    { icon: "💎", textKey: "feature_gems" },
+  ];
+
   const renderStepContent = () => {
     switch (step) {
       case 0:
@@ -264,16 +266,10 @@ export default function OnboardingScreen() {
             <Text style={[styles.tagline, { color: colors.muted }]}>{t("tagline")}</Text>
             <Text style={[styles.phrase, { color: colors.foreground }]}>"{phrase}"</Text>
             <View style={styles.featureList}>
-              {[
-                { icon: "🏃", text: "Rastreie suas corridas com GPS" },
-                { icon: "🔥", text: "Cuide da sua Fênix virtual" },
-                { icon: "📊", text: "Acompanhe sua evolução" },
-                { icon: "🎯", text: "Defina e conquiste suas metas" },
-                { icon: "💎", text: "Ganhe gemas e personalize seu pet" },
-              ].map((item) => (
-                <View key={item.text} style={styles.featureItem}>
+              {features.map((item) => (
+                <View key={item.textKey} style={styles.featureItem}>
                   <Text style={styles.featureIcon}>{item.icon}</Text>
-                  <Text style={[styles.featureText, { color: colors.foreground }]}>{item.text}</Text>
+                  <Text style={[styles.featureText, { color: colors.foreground }]}>{t(item.textKey)}</Text>
                 </View>
               ))}
             </View>
@@ -363,7 +359,9 @@ export default function OnboardingScreen() {
             <View style={styles.petPreview}>
               <Text style={styles.petPreviewEmoji}>🥚</Text>
               <Text style={[styles.petPreviewText, { color: colors.foreground }]}>{t("onboarding_pet_preview")}</Text>
-              <Text style={[styles.petPreviewSub, { color: colors.muted }]}>Desafio de {goalDays || "30"} dias • Ganhe 25 💎 por dia!</Text>
+              <Text style={[styles.petPreviewSub, { color: colors.muted }]}>
+                {t("onboarding_challenge_preview", { days: goalDays || "30" })}
+              </Text>
             </View>
           </View>
         );
@@ -374,7 +372,7 @@ export default function OnboardingScreen() {
               <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_notifications_title")}</Text>
               <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_notifications_subtitle")}</Text>
             </View>
-            {!notificationsEnabled && (
+            {notificationsEnabled === null && (
               <View style={styles.notifButtons}>
                 <TouchableOpacity style={[styles.notifAllowButton, { backgroundColor: colors.primary }]} onPress={handleAllowNotifications}>
                   <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
@@ -384,10 +382,10 @@ export default function OnboardingScreen() {
                 </TouchableOpacity>
               </View>
             )}
-            {!!notificationsEnabled && (
+            {notificationsEnabled === true && (
               <View style={styles.timePickerSection}>
                 <View style={[styles.notifConfirm, { backgroundColor: colors.success + "20", borderColor: colors.success }]}>
-                  <Text style={[styles.notifConfirmText, { color: colors.success }]}>✅ Notificações ativadas!</Text>
+                  <Text style={[styles.notifConfirmText, { color: colors.success }]}>✅ {t("notifications_enabled")}</Text>
                 </View>
                 <Text style={[styles.timeLabel, { color: colors.foreground }]}>{t("onboarding_notifications_time")}</Text>
                 <TouchableOpacity style={[styles.timePickerButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => setShowTimePicker(true)}>
@@ -398,7 +396,7 @@ export default function OnboardingScreen() {
                     value={selectedTime}
                     mode="time"
                     display="spinner"
-                    onValueChange={(event, date) => {
+                    onChange={(event, date) => {
                       setShowTimePicker(false);
                       if (date) setSelectedTime(date);
                     }}
@@ -406,10 +404,10 @@ export default function OnboardingScreen() {
                 )}
               </View>
             )}
-            {!notificationsEnabled && (
+            {notificationsEnabled === false && (
               <View style={styles.notifDeniedSection}>
                 <View style={[styles.notifDeniedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <Text style={[styles.notifDeniedText, { color: colors.muted }]}>Tudo bem! Você pode ativar as notificações depois nas Configurações.</Text>
+                  <Text style={[styles.notifDeniedText, { color: colors.muted }]}>{t("notifications_denied_message")}</Text>
                 </View>
               </View>
             )}
@@ -419,8 +417,6 @@ export default function OnboardingScreen() {
         return null;
     }
   };
-
-  const styles = OnboardingStyles(colors);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -481,4 +477,3 @@ function StepIndicator({ current, total, colors }: { current: number; total: num
     </View>
   );
 }
-

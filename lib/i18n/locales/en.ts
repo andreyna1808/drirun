@@ -426,4 +426,20 @@ export default {
   shop_packages_title: "Gem Packs",
   shop_buy_button: "Buy",
   shop_disclaimer: "Payments processed by App Store / Google Play. Gems are valid only within this app.",
+
+  // Features (welcome screen)
+  feature_gps: "Track your runs with GPS",
+  feature_pet: "Take care of your virtual Phoenix",
+  feature_stats: "Track your evolution",
+  feature_goals: "Set and achieve your goals",
+  feature_gems: "Earn gems and customize your pet",
+
+  // Onboarding (extra)
+  onboarding_challenge_preview: "{{days}}-day challenge • Earn 25 💎 per day!",
+
+  // Notifications
+  notifications_enabled: "Notifications enabled!",
+  notifications_denied_message: "That's fine! You can enable notifications later in Settings.",
+  permission_denied_title: "Permission Denied",
+  permission_denied_message: "Could not enable notifications. You can enable them later in Settings.",
 };
