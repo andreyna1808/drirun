@@ -107,6 +107,6 @@ export const CalendarStyles = (colors: any) => {
         },
         emptyEmoji: { fontSize: 48 },
         emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
-        adBanner: { maxHeight: 180, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
+        adBanner: { maxHeight: 80, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
     });
 }

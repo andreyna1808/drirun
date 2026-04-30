@@ -88,6 +88,6 @@ export const TrackingStyles = (colors: any) => {
             marginLeft: 10,
             // backgroundColor: colors.danger,
         },
-        adBanner: { maxHeight: 180, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
+        adBanner: { maxHeight: 80, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
     });
 };

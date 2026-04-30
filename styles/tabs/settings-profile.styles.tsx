@@ -35,6 +35,6 @@ export const SettingsProfileStyles = (colors: any) => {
             marginTop: 32,
         },
         saveText: { color: "#FFF", fontWeight: "700", fontSize: 16 },
-        adBanner: { maxHeight: 180, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
+        adBanner: { maxHeight: 80, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
     });
 }
