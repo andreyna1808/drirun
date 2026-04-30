@@ -11,32 +11,14 @@ import { ScreenContainer } from "@/components/screen-container";
 import { CalendarStyles, CELL_SIZE } from "@/styles/tabs/calendar.styles";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
-
-interface BMICategory {
-  key: string;           // chave de tradução
-  color: string;
-  emoji: string;
-  min: number;
-  max: number;
-}
-
-const BMI_CATEGORIES: BMICategory[] = [
-  { key: "bmi_underweight", color: "#60A5FA", emoji: "📉", min: 0, max: 18.5 },
-  { key: "bmi_normal", color: "#34D399", emoji: "✅", min: 18.5, max: 25 },
-  { key: "bmi_overweight", color: "#FBBF24", emoji: "⚠️", min: 25, max: 30 },
-  { key: "bmi_obese1", color: "#F97316", emoji: "🔶", min: 30, max: 35 },
-  { key: "bmi_obese2", color: "#EF4444", emoji: "🔴", min: 35, max: 40 },
-  { key: "bmi_obese3", color: "#991B1B", emoji: "🚨", min: 40, max: 999 },
-];
-
-function getBMICategory(bmi: number): BMICategory {
-  return BMI_CATEGORIES.find((c) => bmi >= c.min && bmi < c.max) ?? BMI_CATEGORIES[0];
-}
+import { BMI_CATEGORIES, getBMICategory } from "@/components/calendar/bmi.components";
+import { LegendItem, StatBox } from "@/components/calendar/index.components";
 
 export default function CalendarScreen() {
   const { t } = useTranslation();
   const { state } = useApp();
   const colors = useColors();
+  const styles = CalendarStyles(colors);
 
   // ── Cálculo do IMC ──────────────────────────────────────────────────────
   const bmiData = useMemo(() => {
@@ -93,8 +75,6 @@ export default function CalendarScreen() {
     const percent = calendarDays.length > 0 ? Math.round((done / calendarDays.length) * 100) : 0;
     return { done, missed, remaining, percent };
   }, [calendarDays]);
-
-  const styles = CalendarStyles(colors);
 
   return (
     <ScreenContainer>
@@ -271,25 +251,5 @@ export default function CalendarScreen() {
         </View>
       )}
     </ScreenContainer>
-  );
-}
-
-// ── Subcomponentes ────────────────────────────────────────────────────────────
-
-function StatBox({ value, label, color, colors }: { value: any; label: string; color: string; colors: any }) {
-  return (
-    <View style={[{ flex: 1, alignItems: "center", padding: 8, borderRadius: 12, backgroundColor: color + "15", marginHorizontal: 3 }]}>
-      <Text style={{ fontSize: 20, fontWeight: "800", color }}>{value}</Text>
-      <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2 }}>{label}</Text>
-    </View>
-  );
-}
-
-function LegendItem({ color, emoji, label }: { color: string; emoji: string; label: string }) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-      <Text style={{ fontSize: 14 }}>{emoji}</Text>
-      <Text style={{ fontSize: 12, color }}>{label}</Text>
-    </View>
   );
 }
