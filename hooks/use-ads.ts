@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-    BannerAd,
-    BannerAdSize,
     RewardedAd,
     RewardedAdEventType,
     TestIds,
@@ -17,7 +15,6 @@ export const REWARDED_AD_UNIT_ID = IS_DEV
     ? TestIds.REWARDED
     : process.env.ANDROID_ADMOB_REWARDED_ID!;
 
-// Hook para anúncio premiado
 export function useRewardedAd(onRewarded: () => void) {
     const [loaded, setLoaded] = useState(false);
     const [rewarded] = useState(() => RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID));
@@ -44,7 +41,7 @@ export function useRewardedAd(onRewarded: () => void) {
     function showAd() {
         if (loaded) {
             rewarded.show();
-            setLoaded(false); // reseta para próxima vez
+            setLoaded(false);
         }
     }
 

@@ -1,25 +1,17 @@
-/**
- * pet.tsx
- * Tela do Pet Fênix do DriRun.
- * Exibe a Fênix virtual com diferentes estados baseados na consistência do usuário.
- * O pet evolui com corridas, fica triste sem elas, morre com 7 dias de inatividade
- * e renasce das cinzas quando o usuário retoma as corridas.
- */
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   TextInput,
   ScrollView,
-  StyleSheet,
   Animated,
   Alert,
   Modal,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useApp, PetState, calculatePetState, calculateDaysSinceLastRun } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
@@ -31,74 +23,74 @@ import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 
 interface PetStateConfig {
   emoji: string;
-  title: string;
-  description: string;
+  title: string;        // chave de tradução
+  description: string;  // chave de tradução
   color: string;
   animation: "float" | "shake" | "pulse" | "spin" | "none";
 }
 
-/** Configuração visual para cada estado da Fênix */
+/** Configuração visual para cada estado da Fênix (textos vêm do i18n) */
 const PET_STATES: Record<PetState, PetStateConfig> = {
   egg: {
     emoji: "🥚",
-    title: "Ovo Fênix",
-    description: "Sua Fênix ainda não nasceu. Complete sua primeira corrida para ela eclodir!",
+    title: "pet_state_egg_title",
+    description: "pet_state_egg_description",
     color: "#FFD700",
     animation: "pulse",
   },
   hatchling: {
     emoji: "🐣",
-    title: "Filhote de Fênix",
-    description: "Ela nasceu! Pequena mas cheia de energia. Continue correndo para ela crescer!",
+    title: "pet_state_hatchling_title",
+    description: "pet_state_hatchling_description",
     color: "#FF8C5A",
     animation: "float",
   },
   young: {
     emoji: "🦅",
-    title: "Fênix Jovem",
-    description: "Suas asas estão crescendo! Ela está ficando mais forte a cada corrida.",
+    title: "pet_state_young_title",
+    description: "pet_state_young_description",
     color: "#FF6B35",
     animation: "float",
   },
   adult: {
     emoji: "🔥",
-    title: "Fênix Adulta",
-    description: "Poderosa e majestosa! Ela está quase pronta para voar livre.",
+    title: "pet_state_adult_title",
+    description: "pet_state_adult_description",
     color: "#FFD700",
     animation: "pulse",
   },
   free: {
     emoji: "✨",
-    title: "Fênix Livre!",
-    description: "INCRÍVEL! Você completou sua meta! Sua Fênix conquistou a liberdade eterna!",
+    title: "pet_state_free_title",
+    description: "pet_state_free_description",
     color: "#FFD700",
     animation: "spin",
   },
   sad: {
     emoji: "😢",
-    title: "Fênix Triste",
-    description: "Ela sente sua falta... Volte a correr para animá-la!",
+    title: "pet_state_sad_title",
+    description: "pet_state_sad_description",
     color: "#6B7280",
     animation: "none",
   },
   depressed: {
     emoji: "😞",
-    title: "Fênix Deprimida",
-    description: "3 dias sem correr... Ela está muito triste. Corra hoje antes que seja tarde!",
+    title: "pet_state_depressed_title",
+    description: "pet_state_depressed_description",
     color: "#4B5563",
     animation: "shake",
   },
   dead: {
     emoji: "💀",
-    title: "Fênix Falecida",
-    description: "A Fênix sucumbiu à tristeza. Mas ela pode renascer das cinzas se você voltar a correr!",
+    title: "pet_state_dead_title",
+    description: "pet_state_dead_description",
     color: "#374151",
     animation: "none",
   },
   reborn: {
     emoji: "🌟",
-    title: "Fênix Renascendo!",
-    description: "Das cinzas, ela renasce! Você voltou! Continue assim e ela ficará ainda mais forte!",
+    title: "pet_state_reborn_title",
+    description: "pet_state_reborn_description",
     color: "#FF6B35",
     animation: "spin",
   },
@@ -110,16 +102,17 @@ function PhoenixDisplay({
   petState,
   petName,
   colors,
+  t,
 }: {
   petState: PetState;
   petName: string;
   colors: any;
+  t: any;
 }) {
   const config = PET_STATES[petState];
   const animValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Configura a animação baseada no estado do pet
     let animation: Animated.CompositeAnimation | null = null;
 
     if (config.animation === "float") {
@@ -159,7 +152,6 @@ function PhoenixDisplay({
     };
   }, [petState]);
 
-  // Aplica a transformação correta para cada tipo de animação
   const animStyle = (() => {
     if (config.animation === "float" || config.animation === "shake") {
       return { transform: [{ translateY: animValue }] };
@@ -183,31 +175,30 @@ function PhoenixDisplay({
 
   return (
     <View style={{ alignItems: "center", paddingVertical: 24 }}>
-      {/* Círculo de fundo com cor do estado */}
-      <View style={{
-        width: 160,
-        height: 160,
-        borderRadius: 80,
-        backgroundColor: config.color + "20",
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 3,
-        borderColor: config.color + "40",
-        marginBottom: 16,
-      }}>
+      <View
+        style={{
+          width: 160,
+          height: 160,
+          borderRadius: 80,
+          backgroundColor: config.color + "20",
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: 3,
+          borderColor: config.color + "40",
+          marginBottom: 16,
+        }}
+      >
         <Animated.Text style={[{ fontSize: 80 }, animStyle]}>
           {config.emoji}
         </Animated.Text>
       </View>
 
-      {/* Nome do pet */}
       <Text style={{ fontSize: 22, fontWeight: "800", color: config.color, marginBottom: 4 }}>
         {petName}
       </Text>
 
-      {/* Título do estado */}
       <Text style={{ fontSize: 15, color: "#6B7280", marginBottom: 8 }}>
-        {config.title}
+        {t(config.title)}
       </Text>
     </View>
   );
@@ -216,6 +207,7 @@ function PhoenixDisplay({
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function PetScreen() {
+  const { t } = useTranslation();
   const { state, dispatch, refreshPetState } = useApp();
   const colors = useColors();
   const [isRenaming, setIsRenaming] = useState(false);
@@ -223,37 +215,35 @@ export default function PetScreen() {
 
   const { showAd, loaded } = useRewardedAd(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    dispatch({ type: "ADD_GEMS", payload: 25 }); // 25 gemas
-    Alert.alert("Parabéns! 💎", "+25 gemas adicionadas ao seu saldo!");
+    dispatch({ type: "ADD_GEMS", payload: 25 });
+    Alert.alert(t("pet_ad_reward_title"), t("pet_ad_reward_message"));
   });
 
-  // Atualiza o estado do pet ao abrir a tela
   useEffect(() => {
     refreshPetState();
   }, [refreshPetState]);
 
   const petConfig = PET_STATES[state.pet.state];
 
-  // Calcula o progresso de evolução (0–100%)
   const evolutionProgress = useMemo(() => {
     const { totalDaysCompleted } = state.pet;
     const { goalDays } = state;
     return Math.min(Math.round((totalDaysCompleted / goalDays) * 100), 100);
   }, [state.pet.totalDaysCompleted, state.goalDays]);
 
-  // Determina o próximo estado de evolução
   const nextEvolution = useMemo(() => {
     const { totalDaysCompleted } = state.pet;
-    if (totalDaysCompleted < 1) return { name: "Filhote", daysNeeded: 1 };
-    if (totalDaysCompleted < 8) return { name: "Jovem", daysNeeded: 8 };
-    if (totalDaysCompleted < 21) return { name: "Adulta", daysNeeded: 21 };
-    if (totalDaysCompleted < state.goalDays) return { name: "Livre", daysNeeded: state.goalDays };
+    if (totalDaysCompleted < 1) return { nameKey: "pet_state_hatchling_title", daysNeeded: 1 };
+    if (totalDaysCompleted < 8) return { nameKey: "pet_state_young_title", daysNeeded: 8 };
+    if (totalDaysCompleted < 21) return { nameKey: "pet_state_adult_title", daysNeeded: 21 };
+    if (totalDaysCompleted < state.goalDays)
+      return { nameKey: "pet_state_free_title", daysNeeded: state.goalDays };
     return null;
   }, [state.pet.totalDaysCompleted, state.goalDays]);
 
   function handleRename() {
     if (!newName.trim()) {
-      Alert.alert("Nome inválido", "O nome não pode estar vazio.");
+      Alert.alert(t("pet_invalid_name_title"), t("pet_invalid_name_message"));
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -269,23 +259,19 @@ export default function PetScreen() {
       <ScreenContainer>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.ripContainer}>
-            {/* Lápide */}
             <Text style={styles.ripEmoji}>🪦</Text>
             <Text style={styles.ripTitle}>R.I.P.</Text>
             <Text style={styles.ripPetName}>{state.pet.name}</Text>
             <View style={styles.ripCard}>
-              <Text style={styles.ripReason}>Motivo do falecimento:</Text>
+              <Text style={styles.ripReason}>{t("pet_rip_reason_label")}</Text>
               <Text style={styles.ripText}>
-                {state.profile?.name ?? "O dono"} não foi consistente.
+                {state.profile?.name ?? t("pet_rip_fallback_owner")} {t("pet_rip_not_consistent")}
               </Text>
               <Text style={styles.ripDays}>
-                {state.pet.daysSinceLastRun} dias sem correr
+                {t("pet_rip_days_label", { days: state.pet.daysSinceLastRun })}
               </Text>
             </View>
-            <Text style={styles.ripHope}>
-              Mas não tudo está perdido...{"\n"}
-              Volte a correr e sua Fênix renascerá das cinzas! 🔥
-            </Text>
+            <Text style={styles.ripHope}>{t("pet_rip_hope")}</Text>
           </View>
         </ScrollView>
       </ScreenContainer>
@@ -299,39 +285,38 @@ export default function PetScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Cabeçalho ── */}
-        <View style={{
-          flexDirection: "row", alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 12,
-          backgroundColor: colors.primary + "50",
-          padding: 12,
-          borderRadius: 10
-        }}>
-          <Text style={styles.shopTitle}>💎 {state.gems} gemas</Text>
-          <Text style={[{ fontSize: 12, color: "white" }]}>+25💎 por corrida</Text>
+        {/* Header com gemas */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 12,
+            backgroundColor: colors.primary + "50",
+            padding: 12,
+            borderRadius: 10,
+          }}
+        >
+          <Text style={styles.shopTitle}>{t("pet_gems_header", { gems: state.gems })}</Text>
+          <Text style={[{ fontSize: 12, color: "white" }]}>{t("pet_gems_per_run")}</Text>
         </View>
 
         <View style={styles.header}>
-          <Text style={styles.title}>Meu Pet</Text>
-          <TouchableOpacity
-            style={styles.renameButton}
-            onPress={() => setIsRenaming(true)}
-          >
-            <Text style={styles.renameButtonText}>✏️ Renomear</Text>
+          <Text style={styles.title}>{t("pet_title")}</Text>
+          <TouchableOpacity style={styles.renameButton} onPress={() => setIsRenaming(true)}>
+            <Text style={styles.renameButtonText}>{t("pet_rename_button")}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* ── Exibição da Fênix ── */}
+        {/* Exibição da Fênix */}
         <View style={[styles.petCard, { borderColor: petConfig.color + "40" }]}>
           <PhoenixDisplay
             petState={state.pet.state}
             petName={state.pet.name}
             colors={colors}
+            t={t}
           />
-
-          {/* Descrição do estado */}
-          <Text style={styles.petDescription}>{petConfig.description}</Text>
+          <Text style={styles.petDescription}>{t(petConfig.description)}</Text>
         </View>
 
         <View>
@@ -339,15 +324,14 @@ export default function PetScreen() {
             style={[styles.shopButton, { backgroundColor: colors.primary, marginBottom: 12 }]}
             onPress={() => showAd()}
           >
-            <Text>Ganhar +25 gemas</Text>
+            <Text>{t("pet_watch_ad_button")}</Text>
           </TouchableOpacity>
         </View>
 
-
-        {/* ── Barra de evolução ── */}
+        {/* Barra de evolução */}
         <View style={styles.evolutionCard}>
           <View style={styles.evolutionHeader}>
-            <Text style={styles.evolutionLabel}>Evolução</Text>
+            <Text style={styles.evolutionLabel}>{t("pet_evolution_label")}</Text>
             <Text style={styles.evolutionPercent}>{evolutionProgress}%</Text>
           </View>
           <View style={styles.progressBarBg}>
@@ -363,45 +347,62 @@ export default function PetScreen() {
           </View>
           {nextEvolution && (
             <Text style={styles.evolutionHint}>
-              Próxima evolução: {nextEvolution.name} em {nextEvolution.daysNeeded - state.pet.totalDaysCompleted} dias
+              {t("pet_next_evolution", {
+                name: t(nextEvolution.nameKey),
+                days: nextEvolution.daysNeeded - state.pet.totalDaysCompleted,
+              })}
             </Text>
           )}
         </View>
 
-        {/* ── Estatísticas do pet ── */}
+        {/* Estatísticas do pet */}
         <View style={styles.statsGrid}>
           <StatCard
             value={String(state.pet.totalDaysCompleted)}
-            label="Dias Corridos"
+            label={t("pet_stat_days_run")}
             color={colors.success}
             colors={colors}
           />
           <StatCard
-            value={state.pet.daysSinceLastRun === 0 ? "Hoje!" : `${state.pet.daysSinceLastRun}d`}
-            label="Última Corrida"
+            value={
+              state.pet.daysSinceLastRun === 0
+                ? t("pet_stat_today")
+                : `${state.pet.daysSinceLastRun}d`
+            }
+            label={t("pet_stat_last_run")}
             color={state.pet.daysSinceLastRun === 0 ? colors.success : colors.warning}
             colors={colors}
           />
           <StatCard
             value={`${state.goalDays - state.pet.totalDaysCompleted}`}
-            label="Dias Restantes"
+            label={t("pet_stat_days_left")}
             color={colors.primary}
             colors={colors}
           />
         </View>
 
-        {/* ── Aviso de inatividade ── */}
+        {/* Aviso de inatividade */}
         {state.pet.daysSinceLastRun > 0 && state.pet.state !== "dead" && (
-          <View style={[styles.warningCard, {
-            backgroundColor: state.pet.daysSinceLastRun >= 3 ? colors.error + "15" : colors.warning + "15",
-            borderColor: state.pet.daysSinceLastRun >= 3 ? colors.error + "40" : colors.warning + "40",
-          }]}>
+          <View
+            style={[
+              styles.warningCard,
+              {
+                backgroundColor:
+                  state.pet.daysSinceLastRun >= 3 ? colors.error + "15" : colors.warning + "15",
+                borderColor:
+                  state.pet.daysSinceLastRun >= 3 ? colors.error + "40" : colors.warning + "40",
+              },
+            ]}
+          >
             <Text style={styles.warningText}>
               {state.pet.daysSinceLastRun >= 6
-                ? `⚠️ URGENTE! ${state.pet.name} vai morrer amanhã se você não correr!`
+                ? t("pet_warning_urgent", { name: state.pet.name })
                 : state.pet.daysSinceLastRun >= 3
-                  ? `😞 ${state.pet.name} está deprimida. ${7 - state.pet.daysSinceLastRun} dias até a morte.`
-                  : `😢 ${state.pet.name} está triste. Corra hoje para animá-la!`}
+                  ? t("pet_warning_depressed", {
+                    name: state.pet.name,
+                    days: 7 - state.pet.daysSinceLastRun,
+                  })
+                  : t("pet_warning_sad", { name: state.pet.name })}
             </Text>
           </View>
         )}
@@ -410,51 +411,25 @@ export default function PetScreen() {
           <View style={styles.adBanner}>
             <BannerAd
               unitId={BANNER_AD_UNIT_ID}
-              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+              size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
               requestOptions={{ requestNonPersonalizedAdsOnly: true }}
             />
           </View>
         )}
 
-        {/* ── Saldo de gemas + botões de Loja e Galeria ── */}
-        {/* <View style={styles.shopCard}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <Text style={styles.shopTitle}>💎 {state.gems} gemas</Text>
-            <Text style={[{ fontSize: 12, color: colors.muted }]}>+25💎 por corrida</Text>
-          </View>
-          <View style={styles.shopRow}>
-            <TouchableOpacity
-              style={[styles.shopButton, { backgroundColor: colors.primary }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/shop"); }}
-            >
-              <Text style={styles.shopButtonText}>🛒 Pet Shop</Text>
-              <Text style={[styles.shopPrice, { color: "#FFFFFF99" }]}>Comprar itens</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.shopButton, { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/pet-gallery"); }}
-            >
-              <Text style={[styles.shopButtonText, { color: colors.foreground }]}>🎒 Galeria</Text>
-              <Text style={[styles.shopPrice, { color: colors.muted }]}>
-                {state.pet.ownedItems.length} itens
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View> */}
-
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      {/* ── Modal de renomear ── */}
+      {/* Modal de renomear */}
       <Modal visible={isRenaming} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Renomear Pet</Text>
+            <Text style={styles.modalTitle}>{t("pet_rename_modal_title")}</Text>
             <TextInput
               style={styles.modalInput}
               value={newName}
               onChangeText={setNewName}
-              placeholder="Nome do seu pet"
+              placeholder={t("pet_name_placeholder")}
               placeholderTextColor={colors.muted}
               maxLength={20}
               autoFocus
@@ -464,15 +439,22 @@ export default function PetScreen() {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.border }]}
-                onPress={() => { setIsRenaming(false); setNewName(state.pet.name); }}
+                onPress={() => {
+                  setIsRenaming(false);
+                  setNewName(state.pet.name);
+                }}
               >
-                <Text style={[styles.modalButtonText, { color: colors.foreground }]}>Cancelar</Text>
+                <Text style={[styles.modalButtonText, { color: colors.foreground }]}>
+                  {t("pet_cancel_button")}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.primary }]}
                 onPress={handleRename}
               >
-                <Text style={[styles.modalButtonText, { color: "#FFFFFF" }]}>Salvar</Text>
+                <Text style={[styles.modalButtonText, { color: "#FFFFFF" }]}>
+                  {t("pet_save_button")}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -484,34 +466,34 @@ export default function PetScreen() {
 
 // ─── Componente de card de estatística ───────────────────────────────────────
 
-function StatCard({ value, label, color, colors }: {
+function StatCard({
+  value,
+  label,
+  color,
+  colors,
+}: {
   value: string;
   label: string;
   color: string;
   colors: any;
 }) {
   return (
-    <View style={{
-      flex: 1,
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 12,
-      alignItems: "center",
-      marginHorizontal: 4,
-      borderWidth: 1,
-      borderColor: colors.border,
-    }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 12,
+        alignItems: "center",
+        marginHorizontal: 4,
+        borderWidth: 1,
+        borderColor: colors.border,
+      }}
+    >
       <Text style={{ fontSize: 20, fontWeight: "800", color }}>{value}</Text>
-      <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2, textAlign: "center" }}>{label}</Text>
+      <Text style={{ fontSize: 11, color: colors.muted, marginTop: 2, textAlign: "center" }}>
+        {label}
+      </Text>
     </View>
   );
 }
-
-// ─── Utilitário de memo ───────────────────────────────────────────────────────
-
-function useMemo<T>(factory: () => T, deps: any[]): T {
-  return React.useMemo(factory, deps);
-}
-
-// ─── Estilos ─────────────────────────────────────────────────────────────────
-

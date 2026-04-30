@@ -92,7 +92,7 @@ export default function EditProfileScreen() {
                 <View style={styles.adBanner}>
                     <BannerAd
                         unitId={BANNER_AD_UNIT_ID}
-                        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                        size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
                         requestOptions={{ requestNonPersonalizedAdsOnly: true }}
                     />
                 </View>
