@@ -13,6 +13,8 @@ import { useApp, hasRunToday, getTodayRun } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
 import { LoggedStyles } from "@/styles/tabs/styles";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 
 const { width } = Dimensions.get("window");
 
@@ -206,7 +208,11 @@ export default function LoggedHomeScreen() {
       {/* Banner de anúncio */}
       {!state.hasRemovedAds && (
         <View style={styles.adBanner}>
-          <Text style={styles.adText}>{t("home_ad_banner")}</Text>
+          <BannerAd
+            unitId={BANNER_AD_UNIT_ID}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          />
         </View>
       )}
     </ScreenContainer>

@@ -26,6 +26,7 @@ import * as Haptics from "expo-haptics";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { RunSummaryStyles } from "@/styles/run-summary.styles";
+import { useRewardedAd } from "@/hooks/use-ads";
 
 const { width } = Dimensions.get("window");
 
@@ -69,6 +70,13 @@ export default function RunSummaryScreen() {
   const metricsOpacity = useRef(new Animated.Value(0)).current;
 
   const [adWatched, setAdWatched] = useState(false);
+
+  const { showAd, loaded } = useRewardedAd(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    dispatch({ type: "ADD_GEMS", payload: 25 }); // 25 gemas
+    setAdWatched(true);
+    Alert.alert("Parabéns! 💎", "+25 gemas adicionadas ao seu saldo!");
+  });
 
   // Busca os dados da corrida pelo ID
   const run = state.runs.find((r) => r.id === runId);
@@ -150,23 +158,23 @@ export default function RunSummaryScreen() {
   /** Simula assistir anuncio para ganhar 50 gemas extras */
   function handleWatchAd() {
     if (adWatched) {
-      Alert.alert("Ja assistido!", "Voce ja ganhou o bonus de hoje.");
+      Alert.alert("Já assistido!", "Você já ganhou o bônus de hoje.");
       return;
     }
+
+    if (!loaded) {
+      Alert.alert("Aguarde", "O anúncio ainda está carregando, tente novamente em instantes.");
+      return;
+    }
+
     Alert.alert(
-      "Assistir Anuncio?",
-      "Assista um anuncio curto e ganhe +50 💎 de bonus!",
+      "Assistir Anúncio?",
+      "Assista um anúncio curto e ganhe +25 💎 de bônus!",
       [
-        { text: "Agora nao", style: "cancel" },
+        { text: "Agora não", style: "cancel" },
         {
-          text: "Assistir e ganhar 50 💎",
-          onPress: () => {
-            // TODO: Integrar com expo-ads-admob para producao
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            dispatch({ type: "ADD_GEMS", payload: 50 });
-            setAdWatched(true);
-            Alert.alert("Parabens! 💎", "+50 gemas adicionadas ao seu saldo!");
-          },
+          text: "Assistir e ganhar 25 💎",
+          onPress: () => showAd(),
         },
       ]
     );
@@ -342,12 +350,12 @@ export default function RunSummaryScreen() {
               {currentDay >= goalDays
                 ? "🏆 VOCE COMPLETOU O DESAFIO! Sua Fenix e livre!"
                 : currentDay >= goalDays * 0.75
-                ? "🔥 Incrivel! Voce esta nos 75%! A linha de chegada esta proxima!"
-                : currentDay >= goalDays * 0.5
-                ? "💪 Metade do caminho! Voce e consistente!"
-                : currentDay >= 7
-                ? "⚡ Uma semana completa! Habito formado!"
-                : `🌱 Dia ${currentDay} concluido! Cada passo conta!`}
+                  ? "🔥 Incrivel! Voce esta nos 75%! A linha de chegada esta proxima!"
+                  : currentDay >= goalDays * 0.5
+                    ? "💪 Metade do caminho! Voce e consistente!"
+                    : currentDay >= 7
+                      ? "⚡ Uma semana completa! Habito formado!"
+                      : `🌱 Dia ${currentDay} concluido! Cada passo conta!`}
             </Text>
           </View>
 
