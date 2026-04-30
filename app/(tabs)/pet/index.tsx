@@ -212,11 +212,13 @@ export default function PetScreen() {
   const colors = useColors();
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(state.pet.name);
+  const [cooldown, setCooldown] = useState(0);
 
   const { showAd, loaded } = useRewardedAd(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     dispatch({ type: "ADD_GEMS", payload: 25 });
     Alert.alert(t("pet_ad_reward_title"), t("pet_ad_reward_message"));
+    setCooldown(30);
   });
 
   useEffect(() => {
@@ -278,6 +280,14 @@ export default function PetScreen() {
     );
   }
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const interval = setInterval(() => {
+      setCooldown(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldown]);
+
   return (
     <ScreenContainer>
       <ScrollView
@@ -321,10 +331,22 @@ export default function PetScreen() {
 
         <View>
           <TouchableOpacity
-            style={[styles.shopButton, { backgroundColor: colors.primary, marginBottom: 12 }]}
-            onPress={() => showAd()}
+            style={[
+              styles.shopButton,
+              { backgroundColor: colors.primary, marginBottom: 12 },
+              (cooldown > 0) && { opacity: 0.5 }
+            ]}
+            disabled={cooldown > 0}
+            onPress={() => {
+              if (cooldown > 0) return;
+              showAd();
+            }}
           >
-            <Text>{t("pet_watch_ad_button")}</Text>
+            <Text>
+              {cooldown > 0
+                ? `${cooldown}s`
+                : t("pet_watch_ad_button")}
+            </Text>
           </TouchableOpacity>
         </View>
 

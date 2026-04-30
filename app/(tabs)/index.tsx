@@ -154,7 +154,7 @@ export default function LoggedHomeScreen() {
           <View style={styles.startCard}>
             <Text style={styles.phraseText}>“{t(phraseKey)}”</Text>
             <TouchableOpacity style={styles.startButton} onPress={handleStartRun}>
-              <Text style={styles.startButtonText}>🏃 {t("home_start_run")}</Text>
+              <Text style={styles.startButtonText}>{t("home_start_run")}</Text>
             </TouchableOpacity>
             <Text style={styles.startHint}>{t("home_start_run_hint")}</Text>
           </View>
