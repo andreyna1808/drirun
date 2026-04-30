@@ -9,6 +9,8 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
 import { SettingsProfileStyles } from "@/styles/tabs/settings-profile.styles";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 
 export default function EditProfileScreen() {
     const { t } = useTranslation();
@@ -85,6 +87,16 @@ export default function EditProfileScreen() {
                     <Text style={styles.saveText}>{t("profile_save_button")}</Text>
                 </TouchableOpacity>
             </ScrollView>
+
+            {!state.hasRemovedAds && (
+                <View style={styles.adBanner}>
+                    <BannerAd
+                        unitId={BANNER_AD_UNIT_ID}
+                        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                    />
+                </View>
+            )}
         </ScreenContainer>
     );
 }

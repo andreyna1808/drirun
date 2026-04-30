@@ -16,6 +16,8 @@ import { router } from "expo-router";
 import { useApp, RunRecord } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { TrackingStyles } from "@/styles/tracking.styles";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 
 
 // ─── Constantes de cálculo ────────────────────────────────────────────────────
@@ -376,6 +378,16 @@ export default function TrackingScreen() {
           </View>
         )}
       </View>
+
+      {!state.hasRemovedAds && (
+        <View style={styles.adBanner}>
+          <BannerAd
+            unitId={BANNER_AD_UNIT_ID}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          />
+        </View>
+      )}
     </View>
   );
 }

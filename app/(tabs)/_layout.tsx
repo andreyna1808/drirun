@@ -44,6 +44,16 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      <Tabs.Screen
+        name="metrics"
+        options={{
+          title: "Métricas",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="chart.bar.fill" color={color} />
+          ),
+        }}
+      />
 
       <Tabs.Screen
         name="calendar/index"
@@ -108,15 +118,6 @@ export default function TabLayout() {
       <Tabs.Screen name="settings/profile" options={{ href: null }} />
       <Tabs.Screen name="settings/about" options={{ href: null }} />
 
-      <Tabs.Screen
-        name="metrics"
-        options={{
-          title: "Métricas",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="chart.bar.fill" color={color} />
-          ),
-        }}
-      />
     </Tabs>
   );
 }

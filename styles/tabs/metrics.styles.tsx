@@ -64,5 +64,6 @@ export const MetricsStyles = (colors: any) => {
             textAlign: "center",
             lineHeight: 22,
         },
+        adBanner: { maxHeight: 180, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
     });
 }

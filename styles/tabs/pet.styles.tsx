@@ -246,5 +246,6 @@ export const PetStyles = (colors: any) => {
             fontSize: 15,
             fontWeight: "700",
         },
+        adBanner: { maxHeight: 180, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
     });
 }

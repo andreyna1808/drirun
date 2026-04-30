@@ -36,7 +36,7 @@ export const LoggedStyles = (colors: any) => {
         recentRunDistance: { fontSize: 18, fontWeight: "700", color: colors.foreground },
         recentRunPace: { fontSize: 14, fontWeight: "600", color: colors.primary },
         recentRunTime: { fontSize: 13, color: colors.muted },
-        adBanner: { height: 50, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
+        adBanner: { maxHeight: 180, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, alignItems: "center", justifyContent: "center" },
         adText: { fontSize: 12, color: colors.muted },
     });
 }

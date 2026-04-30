@@ -12,6 +12,8 @@ import { useApp, RunRecord } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
 import { MetricsStyles } from "../../styles/tabs/metrics.styles";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 
 const { width } = Dimensions.get("window");
 const CHART_WIDTH = width - 48;
@@ -376,6 +378,16 @@ export default function MetricsScreen() {
           <Text style={styles.emptyTitle}>{t("metrics_empty_title")}</Text>
           <Text style={styles.emptyText}>{t("metrics_empty_text")}</Text>
         </View>
+
+        {!state.hasRemovedAds && (
+          <View style={styles.adBanner}>
+            <BannerAd
+              unitId={BANNER_AD_UNIT_ID}
+              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+              requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+            />
+          </View>
+        )}
       </ScreenContainer>
     );
   }
@@ -434,6 +446,16 @@ export default function MetricsScreen() {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      {!state.hasRemovedAds && (
+        <View style={styles.adBanner}>
+          <BannerAd
+            unitId={BANNER_AD_UNIT_ID}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          />
+        </View>
+      )}
     </ScreenContainer>
   );
 }

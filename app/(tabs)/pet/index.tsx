@@ -24,6 +24,8 @@ import { useApp, PetState, calculatePetState, calculateDaysSinceLastRun } from "
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
 import { PetStyles } from "@/styles/tabs/pet.styles";
+import { BANNER_AD_UNIT_ID, useRewardedAd } from "@/hooks/use-ads";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 
 // ─── Configuração dos estados do pet ─────────────────────────────────────────
 
@@ -219,6 +221,12 @@ export default function PetScreen() {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(state.pet.name);
 
+  const { showAd, loaded } = useRewardedAd(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    dispatch({ type: "ADD_GEMS", payload: 25 }); // 25 gemas
+    Alert.alert("Parabéns! 💎", "+25 gemas adicionadas ao seu saldo!");
+  });
+
   // Atualiza o estado do pet ao abrir a tela
   useEffect(() => {
     refreshPetState();
@@ -292,6 +300,18 @@ export default function PetScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Cabeçalho ── */}
+        <View style={{
+          flexDirection: "row", alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+          backgroundColor: colors.primary + "50",
+          padding: 12,
+          borderRadius: 10
+        }}>
+          <Text style={styles.shopTitle}>💎 {state.gems} gemas</Text>
+          <Text style={[{ fontSize: 12, color: "white" }]}>+25💎 por corrida</Text>
+        </View>
+
         <View style={styles.header}>
           <Text style={styles.title}>Meu Pet</Text>
           <TouchableOpacity
@@ -313,6 +333,16 @@ export default function PetScreen() {
           {/* Descrição do estado */}
           <Text style={styles.petDescription}>{petConfig.description}</Text>
         </View>
+
+        <View>
+          <TouchableOpacity
+            style={[styles.shopButton, { backgroundColor: colors.primary, marginBottom: 12 }]}
+            onPress={() => showAd()}
+          >
+            <Text>Ganhar +25 gemas</Text>
+          </TouchableOpacity>
+        </View>
+
 
         {/* ── Barra de evolução ── */}
         <View style={styles.evolutionCard}>
@@ -370,9 +400,19 @@ export default function PetScreen() {
               {state.pet.daysSinceLastRun >= 6
                 ? `⚠️ URGENTE! ${state.pet.name} vai morrer amanhã se você não correr!`
                 : state.pet.daysSinceLastRun >= 3
-                ? `😞 ${state.pet.name} está deprimida. ${7 - state.pet.daysSinceLastRun} dias até a morte.`
-                : `😢 ${state.pet.name} está triste. Corra hoje para animá-la!`}
+                  ? `😞 ${state.pet.name} está deprimida. ${7 - state.pet.daysSinceLastRun} dias até a morte.`
+                  : `😢 ${state.pet.name} está triste. Corra hoje para animá-la!`}
             </Text>
+          </View>
+        )}
+
+        {!state.hasRemovedAds && (
+          <View style={styles.adBanner}>
+            <BannerAd
+              unitId={BANNER_AD_UNIT_ID}
+              size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+              requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+            />
           </View>
         )}
 

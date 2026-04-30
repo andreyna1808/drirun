@@ -9,6 +9,8 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { ScreenContainer } from "@/components/screen-container";
 import { CalendarStyles, CELL_SIZE } from "@/styles/tabs/calendar.styles";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 
 interface BMICategory {
   key: string;           // chave de tradução
@@ -259,6 +261,15 @@ export default function CalendarScreen() {
           <View style={{ height: 32 }} />
         </View>
       </ScrollView>
+      {!state.hasRemovedAds && (
+        <View style={styles.adBanner}>
+          <BannerAd
+            unitId={BANNER_AD_UNIT_ID}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+          />
+        </View>
+      )}
     </ScreenContainer>
   );
 }
