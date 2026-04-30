@@ -1,4 +1,4 @@
-import 'dotenv/config';                      // <-- necessário para ler .env
+import 'dotenv/config';
 import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
@@ -27,13 +27,14 @@ const config: ExpoConfig = {
       "POST_NOTIFICATIONS",
       "ACCESS_FINE_LOCATION",
       "ACCESS_COARSE_LOCATION",
+      "BILLING",
     ],
 
-    config: {
-      googleMaps: {
-        apiKey: process.env.GOOGLE_MAPS_API_KEY,
-      },
-    },
+    // config: {
+    //   googleMaps: {
+    //     apiKey: process.env.GOOGLE_MAPS_API_KEY,
+    //   },
+    // },
   },
 
   plugins: [
@@ -60,6 +61,7 @@ const config: ExpoConfig = {
       }
     ],
 
+    "@rnmapbox/maps",
     "expo-location",
     "expo-notifications",
   ],
@@ -69,6 +71,7 @@ const config: ExpoConfig = {
   },
 
   extra: {
+    MAPBOX_PUBLIC_TOKEN: process.env.MAPBOX_PUBLIC_TOKEN,
     ORIGIN_VIDEO_URL: process.env.ORIGIN_VIDEO_URL,
     ORIGIN_LINKEDIN_URL: process.env.ORIGIN_LINKEDIN_URL,
     ORIGIN_YOUTUBE_CHANEL_URL: process.env.ORIGIN_YOUTUBE_CHANEL_URL,

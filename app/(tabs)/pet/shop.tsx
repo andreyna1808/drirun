@@ -91,7 +91,7 @@ export default function ShopScreen() {
         {
           text: t("shop_buy"),
           onPress: () => {
-            // TODO: Integrar com expo-in-app-purchases para produção
+            // TODO: Integrar com expo-iap para produção
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             dispatch({ type: "ADD_GEMS", payload: pkg.gems });
             Alert.alert(t("shop_gems_added_title"), t("shop_gems_added_msg", { gems: pkg.gems }));

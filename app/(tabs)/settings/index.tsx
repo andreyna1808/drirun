@@ -144,23 +144,23 @@ export default function SettingsScreen() {
     );
   }
 
-  function handleRemoveAds() {
-    Alert.alert(
-      t("settings_remove_ads_title"),
-      t("settings_remove_ads_msg"),
-      [
-        { text: t("cancel"), style: "cancel" },
-        {
-          text: t("settings_remove_ads_buy"),
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            dispatch({ type: "REMOVE_ADS" });
-            Alert.alert(t("success"), t("settings_remove_ads_success"));
-          },
-        },
-      ]
-    );
-  }
+  // function handleRemoveAds() {
+  //   Alert.alert(
+  //     t("settings_remove_ads_title"),
+  //     t("settings_remove_ads_msg"),
+  //     [
+  //       { text: t("cancel"), style: "cancel" },
+  //       {
+  //         text: t("settings_remove_ads_buy"),
+  //         onPress: () => {
+  //           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  //           dispatch({ type: "REMOVE_ADS" });
+  //           Alert.alert(t("success"), t("settings_remove_ads_success"));
+  //         },
+  //       },
+  //     ]
+  //   );
+  // }
 
   return (
     <ScreenContainer>
@@ -319,7 +319,7 @@ export default function SettingsScreen() {
         {/* ── Loja ── */}
         <SectionHeader title={t("settings_shop")} colors={colors} />
         <View style={styles.card}>
-          {!state.hasRemovedAds ? (
+          {/* {!state.hasRemovedAds ? (
             <TouchableOpacity style={styles.shopItem} onPress={handleRemoveAds}>
               <View style={styles.shopItemLeft}>
                 <Text style={styles.shopItemEmoji}>🚫</Text>
@@ -345,7 +345,7 @@ export default function SettingsScreen() {
                 {t("settings_ads_removed")}
               </Text>
             </View>
-          )}
+          )} */}
         </View>
 
         {/* ── Sobre ── */}

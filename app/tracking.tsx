@@ -6,7 +6,8 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import MapView, { Polyline, Marker } from "react-native-maps";
+import MapboxGL from "@rnmapbox/maps";
+import Constants from "expo-constants";
 import * as Location from "expo-location";
 import { useKeepAwake } from "expo-keep-awake";
 import * as Haptics from "expo-haptics";
@@ -20,19 +21,22 @@ import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 import { formatDuration, formatPace } from "@/utils/tabs";
 import { haversineDistance, estimateCalories } from "@/utils/tracking";
 
+// Inicializa o Mapbox com o token público
+MapboxGL.setAccessToken(Constants.expoConfig?.extra?.MAPBOX_PUBLIC_TOKEN ?? "");
+
 export default function TrackingScreen() {
   useKeepAwake();
 
   const { t } = useTranslation();
   const { state, dispatch } = useApp();
   const colors = useColors();
-  const mapRef = useRef<MapView>(null);
+  const cameraRef = useRef<MapboxGL.Camera>(null);
 
   // ── Estado da corrida ──────────────────────────────────────────────────────
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [duration, setDuration] = useState(0); // segundos
-  const [distance, setDistance] = useState(0); // metros
+  const [duration, setDuration] = useState(0);
+  const [distance, setDistance] = useState(0);
   const [route, setRoute] = useState<Array<{ latitude: number; longitude: number }>>([]);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -47,7 +51,6 @@ export default function TrackingScreen() {
   const routeRef = useRef<Array<{ latitude: number; longitude: number }>>([]);
 
   // ── Permissão de localização ───────────────────────────────────────────────
-
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -57,7 +60,6 @@ export default function TrackingScreen() {
       }
       setHasPermission(true);
 
-      // Obtém a localização inicial para centralizar o mapa
       try {
         const loc = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
@@ -67,10 +69,10 @@ export default function TrackingScreen() {
           longitude: loc.coords.longitude,
         };
         setCurrentLocation(coords);
-        mapRef.current?.animateToRegion({
-          ...coords,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
+        cameraRef.current?.setCamera({
+          centerCoordinate: [coords.longitude, coords.latitude],
+          zoomLevel: 15,
+          animationDuration: 500,
         });
       } catch (e) {
         console.error("Erro ao obter localização inicial:", e);
@@ -78,14 +80,12 @@ export default function TrackingScreen() {
     })();
 
     return () => {
-      // Limpa subscriptions ao desmontar
       locationSubscription.current?.remove();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
   // ── Iniciar corrida ────────────────────────────────────────────────────────
-
   const startRun = useCallback(async () => {
     if (!hasPermission) {
       Alert.alert(t("tracking_permission_title"), t("tracking_permission_msg"));
@@ -103,18 +103,16 @@ export default function TrackingScreen() {
     routeRef.current = [];
     lastLocationRef.current = null;
 
-    // Timer de duração (incrementa a cada segundo)
     timerRef.current = setInterval(() => {
       durationRef.current += 1;
       setDuration((d) => d + 1);
     }, 1000);
 
-    // Subscreve às atualizações de localização GPS
     locationSubscription.current = await Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 2000,    // atualiza a cada 2 segundos
-        distanceInterval: 5,   // ou a cada 5 metros
+        timeInterval: 2000,
+        distanceInterval: 5,
       },
       (location) => {
         const coords = {
@@ -124,7 +122,6 @@ export default function TrackingScreen() {
 
         setCurrentLocation(coords);
 
-        // Calcula distância incremental
         if (lastLocationRef.current) {
           const delta = haversineDistance(
             lastLocationRef.current.latitude,
@@ -132,7 +129,6 @@ export default function TrackingScreen() {
             coords.latitude,
             coords.longitude
           );
-          // Filtra ruído GPS (ignora saltos maiores que 50m em 2 segundos)
           if (delta < 50) {
             distanceRef.current += delta;
             setDistance(distanceRef.current);
@@ -143,38 +139,33 @@ export default function TrackingScreen() {
         routeRef.current = [...routeRef.current, coords];
         setRoute([...routeRef.current]);
 
-        // Centraliza o mapa na posição atual
-        mapRef.current?.animateToRegion({
-          ...coords,
-          latitudeDelta: 0.003,
-          longitudeDelta: 0.003,
-        }, 500);
+        // Centraliza câmera na posição atual
+        cameraRef.current?.setCamera({
+          centerCoordinate: [coords.longitude, coords.latitude],
+          zoomLevel: 16,
+          animationDuration: 500,
+        });
       }
     );
   }, [hasPermission, t]);
 
   // ── Pausar/Retomar ─────────────────────────────────────────────────────────
-
   const togglePause = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (isPaused) {
-      // Retomar
       setIsPaused(false);
       timerRef.current = setInterval(() => {
         durationRef.current += 1;
         setDuration((d) => d + 1);
       }, 1000);
     } else {
-      // Pausar
       setIsPaused(true);
       if (timerRef.current) clearInterval(timerRef.current);
     }
   }, [isPaused]);
 
   // ── Finalizar corrida ──────────────────────────────────────────────────────
-
   const confirmFinish = useCallback(() => {
-    // Para o timer e a subscrição de localização
     if (timerRef.current) clearInterval(timerRef.current);
     locationSubscription.current?.remove();
 
@@ -184,15 +175,12 @@ export default function TrackingScreen() {
     const finalDistance = distanceRef.current;
     const finalRoute = routeRef.current;
 
-    // Calcula o pace médio em segundos por km
     const paceSecondsPerKm =
       finalDistance > 0 ? (finalDuration / (finalDistance / 1000)) : 0;
 
-    // Estima as calorias com base no peso do usuário
     const weightKg = state.profile?.weight ?? 70;
     const calories = estimateCalories(weightKg, finalDuration);
 
-    // Cria o registro da corrida
     const runRecord: RunRecord = {
       id: Date.now().toString(),
       date: new Date().toISOString().split("T")[0],
@@ -203,10 +191,7 @@ export default function TrackingScreen() {
       route: finalRoute,
     };
 
-    // Salva a corrida no contexto global
     dispatch({ type: "ADD_RUN", payload: runRecord });
-
-    // Navega para a tela de resumo passando os dados da corrida
     router.replace(`/run-summary?runId=${runRecord.id}` as any);
   }, [state.profile, dispatch]);
 
@@ -217,12 +202,14 @@ export default function TrackingScreen() {
   }, []);
 
   const finishRun = useCallback(() => {
-    // Distância mínima de 100m para validar a corrida
     if (distanceRef.current < 100) {
       Alert.alert(
         t("tracking_short_run_title"),
         t("tracking_short_run_message"),
-        [{ text: t("tracking_continue"), style: "cancel" }, { text: t("tracking_cancel"), onPress: cancelRun, style: "destructive" }]
+        [
+          { text: t("tracking_continue"), style: "cancel" },
+          { text: t("tracking_cancel"), onPress: cancelRun, style: "destructive" },
+        ]
       );
       return;
     }
@@ -238,11 +225,20 @@ export default function TrackingScreen() {
   }, [cancelRun, confirmFinish, t]);
 
   // ── Métricas calculadas ────────────────────────────────────────────────────
-
   const currentPace = distance > 0 ? duration / (distance / 1000) : 0;
   const formattedPace = formatPace(currentPace);
   const formattedDuration = formatDuration(duration);
   const formattedDistance = (distance / 1000).toFixed(2);
+
+  // Converte rota para formato GeoJSON do Mapbox
+  const routeGeoJSON: GeoJSON.Feature<GeoJSON.LineString> = {
+    type: "Feature",
+    geometry: {
+      type: "LineString",
+      coordinates: route.map((p) => [p.longitude, p.latitude]),
+    },
+    properties: {},
+  };
 
   const styles = TrackingStyles(colors);
 
@@ -255,34 +251,55 @@ export default function TrackingScreen() {
       )}
 
       {hasPermission && currentLocation ? (
-        <MapView
-          ref={mapRef}
+        <MapboxGL.MapView
           style={styles.map}
-          initialRegion={{
-            latitude: currentLocation.latitude,
-            longitude: currentLocation.longitude,
-            latitudeDelta: 0.005,
-            longitudeDelta: 0.005,
-          }}
-          showsUserLocation
-          followsUserLocation
-          loadingEnabled
+          styleURL={MapboxGL.StyleURL.Street}
+          logoEnabled={false}
+          attributionEnabled={false}
         >
+          <MapboxGL.Camera
+            ref={cameraRef}
+            centerCoordinate={[currentLocation.longitude, currentLocation.latitude]}
+            zoomLevel={15}
+          />
+
+          {/* Localização do usuário */}
+          <MapboxGL.UserLocation visible />
+
+          {/* Linha da rota */}
           {route.length > 1 && (
-            <Polyline
-              coordinates={route}
-              strokeWidth={5}
-              strokeColor={colors.primary}
-            />
+            <MapboxGL.ShapeSource id="routeSource" shape={routeGeoJSON}>
+              <MapboxGL.LineLayer
+                id="routeLine"
+                style={{
+                  lineColor: colors.primary,
+                  lineWidth: 5,
+                  lineCap: "round",
+                  lineJoin: "round",
+                }}
+              />
+            </MapboxGL.ShapeSource>
           )}
-          {currentLocation && (
-            <Marker coordinate={currentLocation} />
+
+          {/* Marcador de início */}
+          {route.length > 0 && (
+            <MapboxGL.PointAnnotation
+              id="startMarker"
+              coordinate={[route[0].longitude, route[0].latitude]}
+            >
+              <View style={{
+                width: 16, height: 16, borderRadius: 8,
+                backgroundColor: "green", borderWidth: 2, borderColor: "#fff"
+              }} />
+            </MapboxGL.PointAnnotation>
           )}
-        </MapView>
+        </MapboxGL.MapView>
       ) : (
         <View style={styles.mapPlaceholder}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.mapPlaceholderText, { color: colors.muted }]}>{t("tracking_waiting_gps")}</Text>
+          <Text style={[styles.mapPlaceholderText, { color: colors.muted }]}>
+            {t("tracking_waiting_gps")}
+          </Text>
         </View>
       )}
 
@@ -303,15 +320,26 @@ export default function TrackingScreen() {
 
       <View style={styles.controlsContainer}>
         {!isRunning ? (
-          <TouchableOpacity style={[styles.controlButton, styles.startButton, { backgroundColor: colors.primary }]} onPress={startRun}>
+          <TouchableOpacity
+            style={[styles.controlButton, styles.startButton, { backgroundColor: colors.primary }]}
+            onPress={startRun}
+          >
             <Text style={styles.controlButtonText}>{t("tracking_start")}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.runningControls}>
-            <TouchableOpacity style={[styles.controlButton, styles.pauseButton, { backgroundColor: colors.accent }]} onPress={togglePause}>
-              <Text style={styles.controlButtonText}>{isPaused ? t("tracking_resume") : t("tracking_pause")}</Text>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.pauseButton, { backgroundColor: colors.accent }]}
+              onPress={togglePause}
+            >
+              <Text style={styles.controlButtonText}>
+                {isPaused ? t("tracking_resume") : t("tracking_pause")}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.controlButton, styles.finishButton, { backgroundColor: colors.error }]} onPress={finishRun}>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.finishButton, { backgroundColor: colors.error }]}
+              onPress={finishRun}
+            >
               <Text style={styles.controlButtonText}>{t("tracking_finish")}</Text>
             </TouchableOpacity>
           </View>
