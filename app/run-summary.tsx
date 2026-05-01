@@ -18,6 +18,7 @@ import { RunSummaryStyles } from "@/styles/run-summary.styles";
 import { useRewardedAd } from "@/hooks/use-ads";
 import { formatDuration, formatPace } from "@/utils/tabs";
 import { MetricItem } from "@/components/metric-item";
+import { MapView } from "@/components/map-view";
 
 MapboxGL.setAccessToken(Constants.expoConfig?.extra?.MAPBOX_PUBLIC_TOKEN ?? "");
 
@@ -26,6 +27,11 @@ export default function RunSummaryScreen() {
   const { runId } = useLocalSearchParams<{ runId: string }>();
   const { state, dispatch } = useApp();
   const colors = useColors();
+
+  const run = state.runs.find((r) => r.id === runId);
+  const currentDay = state.runs.length;
+  const goalDays = state.goalDays;
+  const styles = RunSummaryStyles(colors);
 
   const phoenixScale = useRef(new Animated.Value(0)).current;
   const phoenixRotate = useRef(new Animated.Value(0)).current;
@@ -41,10 +47,6 @@ export default function RunSummaryScreen() {
     setAdWatched(true);
     Alert.alert(t("ad_reward_title"), t("ad_reward_message"));
   });
-
-  const run = state.runs.find((r) => r.id === runId);
-  const currentDay = state.runs.length;
-  const goalDays = state.goalDays;
 
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -70,11 +72,6 @@ export default function RunSummaryScreen() {
     ).start();
   }, []);
 
-  const rotateInterpolate = phoenixRotate.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: ["-10deg", "0deg", "10deg"],
-  });
-
   function handleWatchAd() {
     if (adWatched) {
       Alert.alert(t("ad_already_watched_title"), t("ad_already_watched_message"));
@@ -94,37 +91,6 @@ export default function RunSummaryScreen() {
     );
   }
 
-  const route = run?.route ?? [];
-  const hasRoute = route.length > 1;
-
-  // GeoJSON da rota para o Mapbox
-  const routeGeoJSON: GeoJSON.Feature<GeoJSON.LineString> = {
-    type: "Feature",
-    geometry: {
-      type: "LineString",
-      coordinates: route.map((p) => [p.longitude, p.latitude]),
-    },
-    properties: {},
-  };
-
-  // Bounding box para encaixar a rota na câmera
-  const bounds = hasRoute ? {
-    ne: [
-      Math.max(...route.map((p) => p.longitude)),
-      Math.max(...route.map((p) => p.latitude)),
-    ],
-    sw: [
-      Math.min(...route.map((p) => p.longitude)),
-      Math.min(...route.map((p) => p.latitude)),
-    ],
-    paddingTop: 30,
-    paddingBottom: 30,
-    paddingLeft: 30,
-    paddingRight: 30,
-  } : null;
-
-  const styles = RunSummaryStyles(colors);
-
   if (!run) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, marginBottom: 60 }]}>
@@ -141,13 +107,6 @@ export default function RunSummaryScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* ── Cabeçalho de celebração ── */}
         <View style={[styles.celebrationHeader, { backgroundColor: colors.primary }]}>
-          <Animated.View style={[styles.confetti, { opacity: confettiOpacity }]}>
-            <Text style={styles.confettiText}>🎊 🎉 🎊 🎉 🎊</Text>
-          </Animated.View>
-
-          <Animated.View style={{ transform: [{ scale: phoenixScale }, { rotate: rotateInterpolate }] }}>
-            <Text style={styles.phoenixEmoji}>🔥</Text>
-          </Animated.View>
 
           <Text style={styles.celebrationTitle}>
             {t("celebration_day_completed", { currentDay, goalDays })}
@@ -183,61 +142,7 @@ export default function RunSummaryScreen() {
           </View>
 
           {/* ── Mapa da rota com Mapbox ── */}
-          {hasRoute && (
-            <View style={[styles.mapCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.metricsTitle, { color: colors.foreground }]}>🗺️ {t("route_title")}</Text>
-              <MapboxGL.MapView
-                style={styles.map}
-                styleURL={MapboxGL.StyleURL.Street}
-                scrollEnabled={false}
-                zoomEnabled={false}
-                logoEnabled={false}
-                attributionEnabled={false}
-              >
-                {bounds && (
-                  <MapboxGL.Camera
-                    bounds={bounds}
-                    animationDuration={0}
-                  />
-                )}
-
-                {/* Linha da rota */}
-                <MapboxGL.ShapeSource id="summaryRoute" shape={routeGeoJSON}>
-                  <MapboxGL.LineLayer
-                    id="summaryLine"
-                    style={{
-                      lineColor: colors.primary,
-                      lineWidth: 4,
-                      lineCap: "round",
-                      lineJoin: "round",
-                    }}
-                  />
-                </MapboxGL.ShapeSource>
-
-                {/* Marcador de início */}
-                <MapboxGL.PointAnnotation
-                  id="start"
-                  coordinate={[route[0].longitude, route[0].latitude]}
-                >
-                  <View style={{
-                    width: 14, height: 14, borderRadius: 7,
-                    backgroundColor: "green", borderWidth: 2, borderColor: "#fff"
-                  }} />
-                </MapboxGL.PointAnnotation>
-
-                {/* Marcador de fim */}
-                <MapboxGL.PointAnnotation
-                  id="end"
-                  coordinate={[route[route.length - 1].longitude, route[route.length - 1].latitude]}
-                >
-                  <View style={{
-                    width: 14, height: 14, borderRadius: 7,
-                    backgroundColor: "red", borderWidth: 2, borderColor: "#fff"
-                  }} />
-                </MapboxGL.PointAnnotation>
-              </MapboxGL.MapView>
-            </View>
-          )}
+          <MapView todayRun={run} type="home" />
 
           {/* ── Bônus de anúncio ── */}
           {!adWatched && (

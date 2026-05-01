@@ -16,6 +16,7 @@ import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 import { calculateStreak, MOTIVATIONAL_PHRASE_KEYS, formatPace, formatDuration } from "@/utils/tabs";
 import { RunMetricRow } from "@/components/run-metric-row";
+import { MapView } from "@/components/map-view";
 
 export default function LoggedHomeScreen() {
   const { t, i18n } = useTranslation();
@@ -96,7 +97,6 @@ export default function LoggedHomeScreen() {
         {/* Status do dia */}
         {alreadyRan ? (
           <View style={styles.doneCard}>
-            <Text style={styles.doneEmoji}>🎉</Text>
             <Text style={styles.doneTitle}>{t("home_today_done_title")}</Text>
             <Text style={styles.doneSub}>{t("home_today_done_subtitle")}</Text>
           </View>
@@ -120,6 +120,8 @@ export default function LoggedHomeScreen() {
               <RunMetricRow label={t("home_time")} value={formatDuration(todayRun.duration)} colors={colors} />
               <RunMetricRow label={t("home_calories")} value={`${todayRun.calories} kcal`} colors={colors} isLast />
             </View>
+
+            <MapView todayRun={todayRun} type="home" />
           </View>
         )}
 

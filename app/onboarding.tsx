@@ -218,7 +218,7 @@ export default function OnboardingScreen() {
   const handleFinish = useCallback(async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const profile = { name: name.trim(), age: parseInt(age), weight: parseFloat(weightKg), height: parseFloat(heightCm), sex: sex as "male" | "female" };
-    if (notificationsEnabled)  await scheduleNotification(state?.pet?.name || "Seu Pet", profile.name, selectedTime);
+    if (notificationsEnabled) await scheduleNotification(state?.pet?.name || "Seu Pet", profile.name, selectedTime);
     dispatch({ type: "COMPLETE_ONBOARDING", payload: { profile, goalDays: parseInt(goalDays), notificationsEnabled: notificationsEnabled ?? false, notificationHour: notificationsEnabled ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}` : null } });
   }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch]);
 
@@ -382,37 +382,41 @@ export default function OnboardingScreen() {
       case 3:
         return (
           <View style={[styles.stepContainer, { height: Dimensions.get("window").height - 200, display: "flex", justifyContent: "center" }]}>
+            {/* Títulos sempre aparecem */}
+            <View style={{ marginBottom: 20 }}>
+              <Text style={[styles.stepTitle, { color: colors.foreground }]}>
+                {t("onboarding_notifications_title")}
+              </Text>
+              <Text style={[styles.stepSubtitle, { color: colors.muted }]}>
+                {t("onboarding_notifications_subtitle")}
+              </Text>
+            </View>
 
-            {notificationsEnabled === null && (
-              <View style={styles.notifButtons}>
-                <View>
-                  <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_notifications_title")}</Text>
-                  <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_notifications_subtitle")}</Text>
-                </View>
-                <TouchableOpacity style={[styles.notifAllowButton, { backgroundColor: colors.primary }]} onPress={handleAllowNotifications}>
-                  <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.notifDenyButton, { borderColor: colors.border, backgroundColor: colors.surface }]} onPress={handleDenyNotifications}>
-                  <Text style={[styles.notifDenyText, { color: colors.muted }]}>{t("onboarding_notifications_deny")}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {notificationsEnabled && (
+            {/* Conteúdo condicional baseado no estado atual */}
+            {notificationsEnabled === true && (
               <View style={styles.timePickerSection}>
                 <View style={[styles.notifConfirm, { backgroundColor: colors.success + "20", borderColor: colors.success }]}>
-                  <Text style={[styles.notifConfirmText, { color: colors.success }]}>✅ {t("notifications_enabled")}</Text>
+                  <Text style={[styles.notifConfirmText, { color: colors.success }]}>
+                    ✅ {t("notifications_enabled")}
+                  </Text>
                 </View>
-                <Text style={[styles.timeLabel, { color: colors.foreground }]}>{t("onboarding_notifications_time")}</Text>
-                <TouchableOpacity style={[styles.timePickerButton, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => setShowTimePicker(true)}>
-                  <Text style={{ color: colors.primary, fontSize: 18, fontWeight: "600" }}>{selectedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
+                <Text style={[styles.timeLabel, { color: colors.foreground }]}>
+                  {t("onboarding_notifications_time")}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.timePickerButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Text style={{ color: colors.primary, fontSize: 18, fontWeight: "600" }}>
+                    {selectedTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </Text>
                 </TouchableOpacity>
                 {showTimePicker && (
                   <DateTimePicker
                     value={selectedTime}
                     mode="time"
                     display="spinner"
-                    onValueChange={(event, date) => {
+                    onChange={(event, date) => {
                       setShowTimePicker(false);
                       if (date) setSelectedTime(date);
                     }}
@@ -420,13 +424,40 @@ export default function OnboardingScreen() {
                 )}
               </View>
             )}
-            {notificationsEnabled == false && (
+
+            {notificationsEnabled === false && (
               <View style={styles.notifDeniedSection}>
                 <View style={[styles.notifDeniedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <Text style={[styles.notifDeniedText, { color: colors.muted }]}>{t("notifications_denied_message")}</Text>
+                  <Text style={[styles.notifDeniedText, { color: colors.muted }]}>
+                    {t("notifications_denied_message")}
+                  </Text>
                 </View>
               </View>
             )}
+
+            {notificationsEnabled === null && (
+              <Text style={[styles.goalHint, { color: colors.muted, marginBottom: 20, textAlign: "center" }]}>
+                {t("onboarding_notifications_ask")}
+              </Text>
+            )}
+
+            {/* Botões de escolha sempre visíveis */}
+            <View style={styles.notifButtons}>
+              <TouchableOpacity
+                style={[styles.notifAllowButton, { backgroundColor: colors.primary }]}
+                onPress={handleAllowNotifications}
+              >
+                <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.notifDenyButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                onPress={handleDenyNotifications}
+              >
+                <Text style={[styles.notifDenyText, { color: colors.muted }]}>
+                  {t("onboarding_notifications_deny")}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
       default:

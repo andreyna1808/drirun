@@ -8,7 +8,7 @@ export const RunSummaryStyles = (colors: any) => {
         errorText: { fontSize: 16, textAlign: "center", marginTop: 100 },
         backLink: { fontSize: 15, textAlign: "center", marginTop: 16, fontWeight: "600" },
         celebrationHeader: {
-            paddingTop: 60,
+            paddingTop: 30,
             paddingBottom: 32,
             paddingHorizontal: 24,
             alignItems: "center",
