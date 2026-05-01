@@ -1,4 +1,4 @@
-import { RunRecord } from "@/context/AppContext";
+import { RunRecord } from "./context";
 
 export interface IMapViewProps {
   todayRun: RunRecord;

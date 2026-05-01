@@ -151,7 +151,7 @@ export default {
   bmi_tip: "Health tip",
 
   // Pet
-  pet_title: "My Pet",
+  pet_title: "Your Pet",
   pet_rename: "Rename",
   pet_rename_title: "Rename Phoenix",
   pet_rename_placeholder: "Your pet's name",
@@ -162,7 +162,7 @@ export default {
   pet_rip_title: "R.I.P. {{name}}",
   pet_rip_reason: "Cause: {{owner}} wasn't consistent.",
   pet_reborn_msg: "From the ashes, {{name}} is reborn! Be consistent this time!",
-  pet_default_name: "My Pet",
+  pet_default_name: "Your Pet",
 
   // Pet States
   pet_state_egg: "Mysterious Egg",
@@ -289,7 +289,7 @@ export default {
   bmi_diff_below: "Difference: {{kg}} kg below ideal",
 
   // Calendário / BMI resumo
-  calendar_bmi_section_title: "Your BMI",
+  calendar_bmi_section_title: "BMI",
   calendar_bmi_no_profile: "Complete your profile to calculate BMI.",
   calendar_stat_done: "Done",
   calendar_stat_missed: "Missed",
@@ -492,5 +492,14 @@ export default {
     "Every run makes you stronger than yesterday.",
     "Your Phoenix is waiting to be reborn with you.",
     "Consistency beats talent when talent isn't consistent."
-  ]
+  ],
+
+  calendar_track_title: "Day {{day}} completed 🎉",
+  calendar_future_title: "Hey, hey, hey! 🚀",
+  calendar_future_message: "Whoa, whoa, whoa, I didn't know you could control space/time. Focus on today, the future is the future! Soon it will be the present.",
+  calendar_today_title: "What are you waiting for?! 🏃",
+  calendar_today_message: "You haven't run today yet, what are you waiting for?!",
+  calendar_missed_title: "That was tough... 😢",
+  calendar_missed_message: "It's okay, everyone has tough days. The important thing is not to give up!",
+  loading_ad: "Preparing your content..."
 };

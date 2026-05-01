@@ -10,7 +10,7 @@ const themeColors = {
   success: { light: '#22C55E', dark: '#4ADE80' },
   warning: { light: '#F59E0B', dark: '#FBBF24' },
   error: { light: '#EF4444', dark: '#F87171' },
-  accent: { light: '#FFD700', dark: '#FFD700' },
+  accent: { light: '#e4941c', dark: '#e4941c' },
   card: { light: '#FFFFFF', dark: '#1A1A2E' },
 };
 

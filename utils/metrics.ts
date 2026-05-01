@@ -1,4 +1,4 @@
-import { RunRecord } from "@/context/AppContext";
+import { RunRecord } from "@/interfaces/context";
 import { FilterPeriod, IChartDataPoint } from "@/interfaces/metrics";
 import { Dimensions } from "react-native";
 
@@ -11,7 +11,7 @@ export const formatPaceShort = (paceSecondsPerKm: number): string => {
     if (!paceSecondsPerKm || paceSecondsPerKm <= 0) return "--:--";
     const m = Math.floor(paceSecondsPerKm / 60);
     const s = Math.round(paceSecondsPerKm % 60);
-    return `${m}:${s.toString().padStart(2, "0")} min/km`;
+    return `${m}'${s.toString().padStart(2, "0")}s /km`;
 };
 
 export const formatDurationShort = (totalSeconds: number): string => {

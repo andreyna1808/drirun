@@ -40,3 +40,46 @@ export const calculateIdealWeight = (heightCm: number): { min: number; max: numb
         max: Math.round(maxBMI * heightM * heightM * 10) / 10,
     };
 }
+
+export const getAllDays = (state: any) => {
+    const [y, m, d] = state.goalStartDate.split("-").map(Number);
+    const startDate = new Date(y, m - 1, d);
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+
+    const days = [];
+    for (let i = 0; i < state.goalDays; i++) {
+        const dayDate = new Date(startDate);
+        dayDate.setDate(startDate.getDate() + i);
+        dayDate.setHours(12, 0, 0, 0);
+
+        const dateStr = dayDate.toISOString().split("T")[0];
+        const hasRun = state.runs.some((r: any) => r.date === dateStr);
+
+        const dayDateOnly = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate());
+        const todayDateOnly = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+
+        const isPast = dayDateOnly < todayDateOnly;
+        const isToday = dayDateOnly.getTime() === todayDateOnly.getTime();
+
+        let status: "done" | "missed" | "future" | "today";
+        if (isToday) {
+            status = hasRun ? "done" : "today";
+        } else if (isPast) {
+            status = hasRun ? "done" : "missed";
+        } else {
+            status = "future";
+        }
+
+        days.push({ dayNumber: i + 1, date: dateStr, status, hasRun });
+    }
+    return days;
+}
+
+export const getAllStatus = (calendarDays: any[]) => {
+    const done = calendarDays.filter((d) => d.status === "done").length;
+    const missed = calendarDays.filter((d) => d.status === "missed").length;
+    const remaining = calendarDays.filter((d) => d.status === "future" || d.status === "today").length;
+    const percent = calendarDays.length > 0 ? Math.round((done / calendarDays.length) * 100) : 0;
+    return { done, missed, remaining, percent };
+}

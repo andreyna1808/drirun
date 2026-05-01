@@ -13,15 +13,15 @@ import { useKeepAwake } from "expo-keep-awake";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useApp, RunRecord } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { TrackingStyles } from "@/styles/tracking.styles";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 import { formatDuration, formatPace } from "@/utils/tabs";
 import { haversineDistance, estimateCalories } from "@/utils/tracking";
+import { RunRecord } from "@/interfaces/context";
 
-// Inicializa o Mapbox com o token público
 MapboxGL.setAccessToken(Constants.expoConfig?.extra?.MAPBOX_PUBLIC_TOKEN ?? "");
 
 export default function TrackingScreen() {

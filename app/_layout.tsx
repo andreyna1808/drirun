@@ -25,19 +25,14 @@ function RootNavigator() {
     );
   }
 
-  // ⚠️ Todas as telas são declaradas SEMPRE, sem condições
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {/* Redirecionador raiz (app/index.tsx) */}
       <Stack.Screen name="index" />
-      {/* Grupo de abas – contém a home real (home.tsx), bmi, etc. */}
       <Stack.Screen name="(tabs)" />
-      {/* Onboarding */}
       <Stack.Screen name="onboarding" />
-      {/* Modais e telas avulsas */}
       <Stack.Screen name="tracking" options={{ presentation: "fullScreenModal" }} />
       <Stack.Screen name="run-summary" options={{ presentation: "modal" }} />
-      {/* <Stack.Screen name="celebration" options={{ presentation: "fullScreenModal" }} /> */}
+      <Stack.Screen name="calendar-track" options={{ presentation: "fullScreenModal" }} />
     </Stack>
   );
 }

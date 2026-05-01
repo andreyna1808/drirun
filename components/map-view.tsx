@@ -6,7 +6,6 @@ import {
 import MapboxGL from "@rnmapbox/maps";
 import Constants from "expo-constants";
 import { useTranslation } from "react-i18next";
-import { RunRecord } from "@/context/AppContext";
 import { useColors } from "@/hooks/use-colors";
 import { RunSummaryStyles } from "@/styles/run-summary.styles";
 import { LoggedStyles } from "@/styles/tabs/styles";
@@ -27,19 +26,19 @@ export function MapView({ todayRun, type }: IMapViewProps) {
         type: "Feature",
         geometry: {
             type: "LineString",
-            coordinates: todayRoute.map((p) => [p.longitude, p.latitude]),
+            coordinates: todayRoute.map((p: any) => [p.longitude, p.latitude]),
         },
         properties: {},
     };
 
     const bounds = hasRoute ? {
         ne: [
-            Math.max(...todayRoute.map((p) => p.longitude)),
-            Math.max(...todayRoute.map((p) => p.latitude)),
+            Math.max(...todayRoute.map((p: any) => p.longitude)),
+            Math.max(...todayRoute.map((p: any) => p.latitude)),
         ],
         sw: [
-            Math.min(...todayRoute.map((p) => p.longitude)),
-            Math.min(...todayRoute.map((p) => p.latitude)),
+            Math.min(...todayRoute.map((p: any) => p.longitude)),
+            Math.min(...todayRoute.map((p: any) => p.latitude)),
         ],
         paddingTop: 40,
         paddingBottom: 40,

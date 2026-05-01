@@ -151,7 +151,7 @@ export default {
   bmi_tip: "Consejo de salud",
 
   // Pet
-  pet_title: "Mi Mascota",
+  pet_title: "Su Mascota",
   pet_rename: "Renombrar",
   pet_rename_title: "Renombrar Fénix",
   pet_rename_placeholder: "Nombre de tu mascota",
@@ -162,7 +162,7 @@ export default {
   pet_rip_title: "R.I.P. {{name}}",
   pet_rip_reason: "Causa: {{owner}} no fue constante.",
   pet_reborn_msg: "¡De las cenizas, {{name}} renace! ¡Sé constante esta vez!",
-  pet_default_name: "Mi Mascota",
+  pet_default_name: "Su Mascota",
 
   // Pet States
   pet_state_egg: "Huevo Misterioso",
@@ -289,7 +289,7 @@ export default {
   bmi_diff_below: "Diferencia: {{kg}} kg por debajo del ideal",
 
   // CALENDAR
-  calendar_bmi_section_title: "Tu IMC",
+  calendar_bmi_section_title: "IMC",
   calendar_bmi_no_profile: "Completa tu perfil para calcular el IMC.",
   calendar_stat_done: "Hechos",
   calendar_stat_missed: "Perdidos",
@@ -492,5 +492,14 @@ export default {
     "Cada carrera te hace más fuerte que ayer.",
     "Tu Fénix espera renacer contigo.",
     "La constancia vence al talento cuando el talento no es constante."
-  ]
+  ],
+
+  calendar_track_title: "Día {{day}} completado 🎉",
+  calendar_future_title: "¡Oye, oye, oye! 🚀",
+  calendar_future_message: "¡Vaya, vaya, vaya! No sabía que podías controlar el espacio/tiempo. ¡Concéntrate en hoy, el futuro es el futuro! Pronto será el presente.",
+  calendar_today_title: "¿A qué esperas? 🏃",
+  calendar_today_message: "Todavía no has corrido hoy, ¿a qué esperas?!",
+  calendar_missed_title: "Fue duro... 😢",
+  calendar_missed_message: "No pasa nada, todos tenemos días difíciles. ¡Lo importante es no rendirse!",
+  loading_ad: "Preparando tu contenido..."
 };

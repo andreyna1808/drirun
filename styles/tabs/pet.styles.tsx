@@ -87,7 +87,8 @@ export const PetStyles = (colors: any) => {
         },
         statsGrid: {
             flexDirection: "row",
-            marginBottom: 16,
+            marginBottom: 30,
+            paddingBottom: 12,
         },
         warningCard: {
             borderRadius: 12,

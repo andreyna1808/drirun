@@ -37,7 +37,7 @@ export const CalendarStyles = (colors: any) => {
             gap: 6,
             paddingHorizontal: 14,
             paddingVertical: 8,
-            borderRadius: 12,
+            borderRadius: 10,
         },
         bmiCategoryEmoji: { fontSize: 20 },
         bmiCategoryLabel: { fontSize: 14, fontWeight: "700" },

@@ -94,6 +94,21 @@ export default function LoggedHomeScreen() {
           </Text>
         </View>
 
+        {/* Atividade de hoje */}
+        {todayRun && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("home_history_title")}</Text>
+            <View style={styles.todayRunCard}>
+              <RunMetricRow label={t("home_distance")} value={`${(todayRun.distance / 1000).toFixed(2)} km`} colors={colors} />
+              <RunMetricRow label={t("home_pace")} value={`${formatPace(todayRun.pace)} /km`} colors={colors} />
+              <RunMetricRow label={t("home_time")} value={formatDuration(todayRun.duration)} colors={colors} />
+              <RunMetricRow label={t("home_calories")} value={`${todayRun.calories} kcal`} colors={colors} isLast />
+            </View>
+
+            <MapView todayRun={todayRun} type="home" />
+          </View>
+        )}
+
         {/* Status do dia */}
         {alreadyRan ? (
           <View style={styles.doneCard}>
@@ -107,21 +122,6 @@ export default function LoggedHomeScreen() {
               <Text style={styles.startButtonText}>{t("home_start_run")}</Text>
             </TouchableOpacity>
             <Text style={styles.startHint}>{t("home_start_run_hint")}</Text>
-          </View>
-        )}
-
-        {/* Atividade de hoje */}
-        {todayRun && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t("home_history_title")}</Text>
-            <View style={styles.todayRunCard}>
-              <RunMetricRow label={t("home_distance")} value={`${(todayRun.distance / 1000).toFixed(2)} km`} colors={colors} />
-              <RunMetricRow label={t("home_pace")} value={`${formatPace(todayRun.pace)} /km`} colors={colors} />
-              <RunMetricRow label={t("home_time")} value={formatDuration(todayRun.duration)} colors={colors} />
-              <RunMetricRow label={t("home_calories")} value={`${todayRun.calories} kcal`} colors={colors} isLast />
-            </View>
-
-            <MapView todayRun={todayRun} type="home" />
           </View>
         )}
 

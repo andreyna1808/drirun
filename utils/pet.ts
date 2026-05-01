@@ -1,4 +1,4 @@
-import { PetState } from "@/context/AppContext";
+import { PetState } from "@/interfaces/context";
 import { IPetStateConfig } from "@/interfaces/pet/pet";
 import { ShopCategory } from "@/lib/shopItems";
 

@@ -9,6 +9,7 @@ export const RunSummaryStyles = (colors: any) => {
         backLink: { fontSize: 15, textAlign: "center", marginTop: 16, fontWeight: "600" },
         celebrationHeader: {
             paddingTop: 30,
+            marginTop: 24,
             paddingBottom: 32,
             paddingHorizontal: 24,
             alignItems: "center",
@@ -131,6 +132,7 @@ export const RunSummaryStyles = (colors: any) => {
             paddingVertical: 16,
             borderRadius: 16,
             alignItems: "center",
+            marginBottom: 24,
         },
         homeButtonText: {
             color: "#FFFFFF",

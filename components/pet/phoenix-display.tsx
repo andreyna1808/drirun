@@ -4,8 +4,8 @@ import {
     Text,
     Animated,
 } from "react-native";
-import { PetState } from "@/context/AppContext";
 import { PET_STATES } from "@/utils/pet";
+import { PetState } from "@/interfaces/context";
 
 export const PhoenixDisplay = ({
     petState,
