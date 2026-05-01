@@ -380,6 +380,7 @@ export default function OnboardingScreen() {
           </View>
         );
       case 3:
+      case 3:
         return (
           <View style={[styles.stepContainer, { height: Dimensions.get("window").height - 200, display: "flex", justifyContent: "center" }]}>
             {/* Títulos sempre aparecem */}
@@ -436,28 +437,22 @@ export default function OnboardingScreen() {
             )}
 
             {notificationsEnabled === null && (
-              <Text style={[styles.goalHint, { color: colors.muted, marginBottom: 20, textAlign: "center" }]}>
-                {t("onboarding_notifications_ask")}
-              </Text>
-            )}
-
-            {/* Botões de escolha sempre visíveis */}
-            <View style={styles.notifButtons}>
-              <TouchableOpacity
-                style={[styles.notifAllowButton, { backgroundColor: colors.primary }]}
-                onPress={handleAllowNotifications}
-              >
-                <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.notifDenyButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
-                onPress={handleDenyNotifications}
-              >
-                <Text style={[styles.notifDenyText, { color: colors.muted }]}>
-                  {t("onboarding_notifications_deny")}
-                </Text>
-              </TouchableOpacity>
-            </View>
+              <View style={styles.notifButtons}>
+                <TouchableOpacity
+                  style={[styles.notifAllowButton, { backgroundColor: colors.primary }]}
+                  onPress={handleAllowNotifications}
+                >
+                  <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.notifDenyButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                  onPress={handleDenyNotifications}
+                >
+                  <Text style={[styles.notifDenyText, { color: colors.muted }]}>
+                    {t("onboarding_notifications_deny")}
+                  </Text>
+                </TouchableOpacity>
+              </View>)}
           </View>
         );
       default:

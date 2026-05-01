@@ -5,6 +5,8 @@ import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/context/AppContext";
+// background-tracking já é registrado no app/_layout.tsx (raiz) — não precisa importar
+// duas vezes; reimportar pode disparar TaskManager.defineTask novamente em hot-reload.
 
 export default function TabLayout() {
   const colors = useColors();

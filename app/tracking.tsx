@@ -21,6 +21,15 @@ import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 import { formatDuration, formatPace } from "@/utils/tabs";
 import { haversineDistance, estimateCalories } from "@/utils/tracking";
 import { RunRecord } from "@/interfaces/context";
+import {
+  startBackgroundLocation,
+  stopBackgroundLocation,
+  setLocationUpdateCallback,
+} from "@/hooks/background-tracking";
+import {
+  showRunNotification,
+  dismissRunNotification,
+} from "@/hooks/run-notification";
 
 MapboxGL.setAccessToken(Constants.expoConfig?.extra?.MAPBOX_PUBLIC_TOKEN ?? "");
 
@@ -43,8 +52,8 @@ export default function TrackingScreen() {
   const [hasPermission, setHasPermission] = useState(false);
 
   // Refs para evitar closures stale
-  const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const notifIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const distanceRef = useRef(0);
   const durationRef = useRef(0);
@@ -53,11 +62,19 @@ export default function TrackingScreen() {
   // ── Permissão de localização ───────────────────────────────────────────────
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
+      // Foreground
+      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== "granted") {
         setLocationError(t("tracking_permission_denied"));
         return;
       }
+
+      // Background
+      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+      if (bgStatus !== "granted") {
+        console.warn("[Tracking] Permissão de background negada — rastreamento limitado ao foreground.");
+      }
+
       setHasPermission(true);
 
       try {
@@ -79,10 +96,21 @@ export default function TrackingScreen() {
       }
     })();
 
+    // Limpeza ao sair da tela sem finalizar
     return () => {
-      locationSubscription.current?.remove();
-      if (timerRef.current) clearInterval(timerRef.current);
+      stopAll();
     };
+  }, []);
+
+  // ── Para tudo ──────────────────────────────────────────────────────────────
+  const stopAll = useCallback(async () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (notifIntervalRef.current) clearInterval(notifIntervalRef.current);
+    timerRef.current = null;
+    notifIntervalRef.current = null;
+    setLocationUpdateCallback(null);
+    await stopBackgroundLocation();
+    await dismissRunNotification();
   }, []);
 
   // ── Iniciar corrida ────────────────────────────────────────────────────────
@@ -103,71 +131,83 @@ export default function TrackingScreen() {
     routeRef.current = [];
     lastLocationRef.current = null;
 
+    // Timer do cronômetro
     timerRef.current = setInterval(() => {
       durationRef.current += 1;
       setDuration((d) => d + 1);
     }, 1000);
 
-    locationSubscription.current = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 2000,
-        distanceInterval: 5,
-      },
-      (location) => {
-        const coords = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
+    // Notificação inicial + atualização a cada 5s
+    await showRunNotification(0);
+    notifIntervalRef.current = setInterval(() => {
+      showRunNotification(durationRef.current);
+    }, 5000);
 
-        setCurrentLocation(coords);
+    // Callback que recebe localização do background task
+    setLocationUpdateCallback((coords: any) => {
+      setCurrentLocation(coords);
 
-        if (lastLocationRef.current) {
-          const delta = haversineDistance(
-            lastLocationRef.current.latitude,
-            lastLocationRef.current.longitude,
-            coords.latitude,
-            coords.longitude
-          );
-          if (delta < 50) {
-            distanceRef.current += delta;
-            setDistance(distanceRef.current);
-          }
+      if (lastLocationRef.current) {
+        const delta = haversineDistance(
+          lastLocationRef.current.latitude,
+          lastLocationRef.current.longitude,
+          coords.latitude,
+          coords.longitude
+        );
+        if (delta < 50) {
+          distanceRef.current += delta;
+          setDistance(distanceRef.current);
         }
-
-        lastLocationRef.current = coords;
-        routeRef.current = [...routeRef.current, coords];
-        setRoute([...routeRef.current]);
-
-        // Centraliza câmera na posição atual
-        cameraRef.current?.setCamera({
-          centerCoordinate: [coords.longitude, coords.latitude],
-          zoomLevel: 16,
-          animationDuration: 500,
-        });
       }
-    );
+
+      lastLocationRef.current = coords;
+      routeRef.current = [...routeRef.current, coords];
+      setRoute([...routeRef.current]);
+
+      cameraRef.current?.setCamera({
+        centerCoordinate: [coords.longitude, coords.latitude],
+        zoomLevel: 16,
+        animationDuration: 500,
+      });
+    });
+
+    // Inicia task de background (substitui watchPositionAsync)
+    await startBackgroundLocation();
   }, [hasPermission, t]);
 
   // ── Pausar/Retomar ─────────────────────────────────────────────────────────
   const togglePause = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     if (isPaused) {
+      // Retomar
       setIsPaused(false);
       timerRef.current = setInterval(() => {
         durationRef.current += 1;
         setDuration((d) => d + 1);
       }, 1000);
+      notifIntervalRef.current = setInterval(() => {
+        showRunNotification(durationRef.current);
+      }, 5000);
     } else {
+      // Pausar
       setIsPaused(true);
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (notifIntervalRef.current) {
+        clearInterval(notifIntervalRef.current);
+        notifIntervalRef.current = null;
+      }
+      // Atualiza notificação mostrando que está pausado
+      showRunNotification(durationRef.current);
     }
   }, [isPaused]);
 
   // ── Finalizar corrida ──────────────────────────────────────────────────────
-  const confirmFinish = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    locationSubscription.current?.remove();
+  const confirmFinish = useCallback(async () => {
+    await stopAll();
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -176,7 +216,7 @@ export default function TrackingScreen() {
     const finalRoute = routeRef.current;
 
     const paceSecondsPerKm =
-      finalDistance > 0 ? (finalDuration / (finalDistance / 1000)) : 0;
+      finalDistance > 0 ? finalDuration / (finalDistance / 1000) : 0;
 
     const weightKg = state.profile?.weight ?? 70;
     const calories = estimateCalories(weightKg, finalDuration);
@@ -193,13 +233,12 @@ export default function TrackingScreen() {
 
     dispatch({ type: "ADD_RUN", payload: runRecord });
     router.replace(`/run-summary?runId=${runRecord.id}` as any);
-  }, [state.profile, dispatch]);
+  }, [stopAll, state.profile, dispatch]);
 
-  const cancelRun = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    locationSubscription.current?.remove();
+  const cancelRun = useCallback(async () => {
+    await stopAll();
     router.back();
-  }, []);
+  }, [stopAll]);
 
   const finishRun = useCallback(() => {
     if (distanceRef.current < 100) {
@@ -216,7 +255,9 @@ export default function TrackingScreen() {
 
     Alert.alert(
       t("tracking_finish_confirm_title"),
-      t("tracking_finish_confirm_message", { distance: (distanceRef.current / 1000).toFixed(2) }),
+      t("tracking_finish_confirm_message", {
+        distance: (distanceRef.current / 1000).toFixed(2),
+      }),
       [
         { text: t("tracking_continue"), style: "cancel" },
         { text: t("tracking_finish"), onPress: confirmFinish },
@@ -230,7 +271,6 @@ export default function TrackingScreen() {
   const formattedDuration = formatDuration(duration);
   const formattedDistance = (distance / 1000).toFixed(2);
 
-  // Converte rota para formato GeoJSON do Mapbox
   const routeGeoJSON: GeoJSON.Feature<GeoJSON.LineString> = {
     type: "Feature",
     geometry: {
@@ -263,10 +303,8 @@ export default function TrackingScreen() {
             zoomLevel={15}
           />
 
-          {/* Localização do usuário */}
           <MapboxGL.UserLocation visible />
 
-          {/* Linha da rota */}
           {route.length > 1 && (
             <MapboxGL.ShapeSource id="routeSource" shape={routeGeoJSON}>
               <MapboxGL.LineLayer
@@ -281,7 +319,6 @@ export default function TrackingScreen() {
             </MapboxGL.ShapeSource>
           )}
 
-          {/* Marcador de início */}
           {route.length > 0 && (
             <MapboxGL.PointAnnotation
               id="startMarker"
@@ -289,7 +326,7 @@ export default function TrackingScreen() {
             >
               <View style={{
                 width: 16, height: 16, borderRadius: 8,
-                backgroundColor: "green", borderWidth: 2, borderColor: "#fff"
+                backgroundColor: "green", borderWidth: 2, borderColor: "#fff",
               }} />
             </MapboxGL.PointAnnotation>
           )}

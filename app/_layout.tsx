@@ -10,6 +10,7 @@ import { AppProvider, useApp } from "@/context/AppContext";
 import { ActivityIndicator, View, Text } from "react-native";
 import i18n, { initI18n } from "@/lib/i18n";
 import { I18nextProvider } from "react-i18next";
+import "@/hooks/background-tracking";
 
 const queryClient = new QueryClient();
 
