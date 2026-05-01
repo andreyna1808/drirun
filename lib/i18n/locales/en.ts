@@ -135,7 +135,6 @@ export default {
   calendar_percent: "{{pct}}% completed",
   calendar_legend_done: "Done",
   calendar_legend_missed: "Missed",
-  calendar_legend_future: "Future",
   calendar_bmi_section: "Your BMI",
 
   // BMI

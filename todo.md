@@ -65,7 +65,7 @@
 - [x] IMC como primeira informação na aba Calendário
 - [x] Gauge visual de IMC com barra de categorias
 - [x] Grade de quadradinhos numerados
-- [x] Emojis nos quadradinhos: 😊 feito, 😢 perdido, ⭐ hoje, ⬜ futuro
+- [x] Emojis nos quadradinhos: 😊 feito, 😢 perdido, ⭐ hoje
 - [x] Indicador de progresso percentual
 
 ## Meu Pet (Fênix)

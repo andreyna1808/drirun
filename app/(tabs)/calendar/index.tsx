@@ -177,7 +177,6 @@ export default function CalendarScreen() {
           <View style={styles.legendRow}>
             <LegendItem color={colors.success} emoji="😊" label={t("calendar_legend_done")} />
             <LegendItem color={colors.error} emoji="😢" label={t("calendar_legend_missed")} />
-            <LegendItem color={colors.muted} emoji="○" label={t("calendar_legend_future")} />
           </View>
 
           {/* Grade de dias */}
@@ -206,7 +205,7 @@ export default function CalendarScreen() {
                 const emoji =
                   day.status === "done" ? "😊" :
                     day.status === "missed" ? "😢" :
-                      day.status === "today" ? "⭐" :
+                      day.status === "today" ? "" :
                         "";
 
                 return (

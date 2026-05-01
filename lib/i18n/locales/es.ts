@@ -135,7 +135,6 @@ export default {
   calendar_percent: "{{pct}}% completado",
   calendar_legend_done: "Hecho",
   calendar_legend_missed: "Perdido",
-  calendar_legend_future: "Futuro",
   calendar_bmi_section: "Tu IMC",
 
   // BMI
