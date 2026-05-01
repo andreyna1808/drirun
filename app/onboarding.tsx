@@ -174,7 +174,12 @@ export default function OnboardingScreen() {
   };
 
   const goToPrev = () => {
-    if (step > 0) setStep(step - 1);
+    if (step > 0) {
+      setStep(step - 1)
+    };
+    if (step == 3) {
+      setNotificationsEnabled(null);
+    }
   };
 
   // Notificações
@@ -232,7 +237,7 @@ export default function OnboardingScreen() {
     switch (step) {
       case 0:
         return (
-          <View style={styles.stepContainer}>
+          <View style={[styles.stepContainer, { height: Dimensions.get("window").height - 200, display: "flex", justifyContent: "center" }]}>
             <Text style={styles.heroEmoji}>🔥</Text>
             <Text style={[styles.appName, { color: colors.primary }]}>DriRun</Text>
             <Text style={[styles.tagline, { color: colors.muted }]}>{t("tagline")}</Text>
@@ -327,7 +332,7 @@ export default function OnboardingScreen() {
         );
       case 2:
         return (
-          <View style={styles.stepContainer}>
+          <View style={[styles.stepContainer, { height: Dimensions.get("window").height - 200, display: "flex", justifyContent: "center" }]}>
             <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_goal_title")}</Text>
             <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_goal_subtitle")}</Text>
             <View style={styles.goalContainer}>
@@ -367,13 +372,14 @@ export default function OnboardingScreen() {
         );
       case 3:
         return (
-          <View style={styles.stepContainer}>
-            <View>
-              <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_notifications_title")}</Text>
-              <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_notifications_subtitle")}</Text>
-            </View>
+          <View style={[styles.stepContainer, { height: Dimensions.get("window").height - 200, display: "flex", justifyContent: "center" }]}>
+
             {notificationsEnabled === null && (
               <View style={styles.notifButtons}>
+                <View>
+                  <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_notifications_title")}</Text>
+                  <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_notifications_subtitle")}</Text>
+                </View>
                 <TouchableOpacity style={[styles.notifAllowButton, { backgroundColor: colors.primary }]} onPress={handleAllowNotifications}>
                   <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
                 </TouchableOpacity>
@@ -382,7 +388,8 @@ export default function OnboardingScreen() {
                 </TouchableOpacity>
               </View>
             )}
-            {notificationsEnabled === true && (
+
+            {notificationsEnabled && (
               <View style={styles.timePickerSection}>
                 <View style={[styles.notifConfirm, { backgroundColor: colors.success + "20", borderColor: colors.success }]}>
                   <Text style={[styles.notifConfirmText, { color: colors.success }]}>✅ {t("notifications_enabled")}</Text>
@@ -396,7 +403,7 @@ export default function OnboardingScreen() {
                     value={selectedTime}
                     mode="time"
                     display="spinner"
-                    onChange={(event, date) => {
+                    onValueChange={(event, date) => {
                       setShowTimePicker(false);
                       if (date) setSelectedTime(date);
                     }}
@@ -404,7 +411,7 @@ export default function OnboardingScreen() {
                 )}
               </View>
             )}
-            {notificationsEnabled === false && (
+            {notificationsEnabled == false && (
               <View style={styles.notifDeniedSection}>
                 <View style={[styles.notifDeniedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <Text style={[styles.notifDeniedText, { color: colors.muted }]}>{t("notifications_denied_message")}</Text>
@@ -425,8 +432,8 @@ export default function OnboardingScreen() {
           ref={scrollViewRef}
           contentContainerStyle={{
             paddingHorizontal: 24,
-            paddingTop: 20,
-            paddingBottom: keyboardVisible ? keyboardHeight + 20 : insets.bottom
+            paddingTop: 10,
+            paddingBottom: keyboardVisible ? keyboardHeight + 30 : insets.bottom
           }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -456,7 +463,7 @@ export default function OnboardingScreen() {
                 styles.navButton,
                 styles.nextButton,
                 step === 0 && { flex: 1 },
-                step === 3 && notificationsEnabled === null && { opacity: 0.5, backgroundColor: colors.muted } // exemplo visual
+                step === 3 && notificationsEnabled === null && { opacity: 0.5, backgroundColor: colors.muted }
               ]}
               onPress={goToNext}
               disabled={step === 3 && notificationsEnabled === null}
