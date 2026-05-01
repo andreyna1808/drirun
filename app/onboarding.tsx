@@ -186,13 +186,22 @@ export default function OnboardingScreen() {
   async function scheduleNotification(petName: string, userName: string, time: Date) {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      const hour = time.getHours();
-      const minute = time.getMinutes();
       await Notifications.scheduleNotificationAsync({
-        content: { title: t("notification_title", { petName }), body: t("notification_body", { userName }), sound: true },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
+        content: {
+          title: t("notification_title", { petName }),
+          body: t("notification_body", { userName }),
+          sound: true,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: time.getHours(),
+          minute: time.getMinutes(),
+          channelId: "default",
+        },
       });
-    } catch (e) { console.warn("Erro ao agendar notificação:", e); }
+    } catch (e) {
+      console.warn("Erro ao agendar notificação:", e);
+    }
   }
 
   async function requestNotificationPermission(): Promise<boolean> {
@@ -209,7 +218,7 @@ export default function OnboardingScreen() {
   const handleFinish = useCallback(async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const profile = { name: name.trim(), age: parseInt(age), weight: parseFloat(weightKg), height: parseFloat(heightCm), sex: sex as "male" | "female" };
-    if (notificationsEnabled) await scheduleNotification("Meu Pet", profile.name, selectedTime);
+    if (notificationsEnabled)  await scheduleNotification(state?.pet?.name || "Seu Pet", profile.name, selectedTime);
     dispatch({ type: "COMPLETE_ONBOARDING", payload: { profile, goalDays: parseInt(goalDays), notificationsEnabled: notificationsEnabled ?? false, notificationHour: notificationsEnabled ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}` : null } });
   }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch]);
 

@@ -23,6 +23,9 @@ import { useTranslation } from "react-i18next";
 import { SettingsStyles } from "@/styles/tabs/settings.styles";
 import { SectionHeader } from "@/components/settings/section-header";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as Notifications from "expo-notifications";
+import { cancelAllNotifications } from "@/hooks/cancel-notification";
+import { scheduleNotification } from "@/hooks/schedule-notification";
 
 export default function SettingsScreen() {
   const { state, dispatch } = useApp();
@@ -30,15 +33,14 @@ export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const [goalDaysInput, setGoalDaysInput] = useState(String(state.goalDays));
   const [editingGoal, setEditingGoal] = useState(false);
-  const [currentLang, setCurrentLang] = useState<SupportedLanguage>(i18n.language as SupportedLanguage);
+  const [currentLang, setCurrentLang] = useState<SupportedLanguage>(
+    i18n.language as SupportedLanguage
+  );
   const styles = SettingsStyles(colors);
   const notifEnabled = state.notifications?.enabled ?? false;
-  const notifHour = state.notifications?.hour ?? "08";
-  // Dentro do componente SettingsScreen:
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempTime, setTempTime] = useState(new Date());
 
-  // UseEffect para inicializar o tempTime a partir do estado atual
   useEffect(() => {
     if (state.notifications?.hour) {
       const [hour, minute] = state.notifications.hour.split(":").map(Number);
@@ -93,11 +95,37 @@ export default function SettingsScreen() {
     setCurrentLang(lang);
   }
 
-  function handleToggleNotifications(enabled: boolean) {
+  async function handleToggleNotifications(enabled: boolean) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (enabled) {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          t("permission_denied_title"),
+          t("permission_denied_message"),
+          [{ text: t("ok") }]
+        );
+        return;
+      }
+
+      const hour = tempTime.getHours();
+      const minute = tempTime.getMinutes();
+      const petName = state.pet.name;
+      const userName = state.profile?.name ?? "";
+      await scheduleNotification(petName, userName, hour, minute);
+    } else {
+      await cancelAllNotifications();
+    }
+
     dispatch({
       type: "UPDATE_NOTIFICATIONS",
-      payload: { enabled, hour: state.notifications?.hour ?? "08" },
+      payload: {
+        enabled,
+        hour: enabled
+          ? `${tempTime.getHours().toString().padStart(2, "0")}:${tempTime.getMinutes().toString().padStart(2, "0")}`
+          : state.notifications?.hour ?? "08:00",
+      },
     });
   }
 
@@ -106,18 +134,27 @@ export default function SettingsScreen() {
     setShowTimePicker(true);
   }
 
-  function onTimeChange(event: any, selectedDate?: Date) {
-    if (selectedDate) {
-      const hours = selectedDate.getHours();
-      const minutes = selectedDate.getMinutes();
-      const formatted = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-      dispatch({
-        type: "UPDATE_NOTIFICATIONS",
-        payload: { enabled: notifEnabled, hour: formatted },
-      });
-      setTempTime(selectedDate);
-    }
+  async function onTimeChange(event: any, selectedDate?: Date) {
     setShowTimePicker(false);
+
+    if (!selectedDate) return;
+
+    const hours = selectedDate.getHours();
+    const minutes = selectedDate.getMinutes();
+    const formatted = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+
+    setTempTime(selectedDate);
+
+    dispatch({
+      type: "UPDATE_NOTIFICATIONS",
+      payload: { enabled: notifEnabled, hour: formatted },
+    });
+
+    if (notifEnabled) {
+      const petName = state.pet.name;
+      const userName = state.profile?.name ?? "";
+      await scheduleNotification(petName, userName, hours, minutes);
+    }
   }
 
   function handleReset() {
@@ -129,8 +166,9 @@ export default function SettingsScreen() {
         {
           text: t("settings_reset_button"),
           style: "destructive",
-          onPress: () => {
+          onPress: async () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            await cancelAllNotifications();
             dispatch({
               type: "LOAD_STATE",
               payload: {
@@ -163,24 +201,6 @@ export default function SettingsScreen() {
       ]
     );
   }
-
-  // function handleRemoveAds() {
-  //   Alert.alert(
-  //     t("settings_remove_ads_title"),
-  //     t("settings_remove_ads_msg"),
-  //     [
-  //       { text: t("cancel"), style: "cancel" },
-  //       {
-  //         text: t("settings_remove_ads_buy"),
-  //         onPress: () => {
-  //           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  //           dispatch({ type: "REMOVE_ADS" });
-  //           Alert.alert(t("success"), t("settings_remove_ads_success"));
-  //         },
-  //       },
-  //     ]
-  //   );
-  // }
 
   return (
     <ScreenContainer>
@@ -304,7 +324,7 @@ export default function SettingsScreen() {
                   value={tempTime}
                   mode="time"
                   display="spinner"
-                  onValueChange={onTimeChange}
+                  onChange={onTimeChange}
                 />
               )}
             </View>
@@ -339,38 +359,6 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
-
-        {/* ── Loja ── */}
-        <SectionHeader title={t("settings_shop")} colors={colors} />
-        <View style={styles.card}>
-          {/* {!state.hasRemovedAds ? (
-            <TouchableOpacity style={styles.shopItem} onPress={handleRemoveAds}>
-              <View style={styles.shopItemLeft}>
-                <Text style={styles.shopItemEmoji}>🚫</Text>
-                <View>
-                  <Text style={[styles.shopItemTitle, { color: colors.foreground }]}>
-                    {t("settings_remove_ads")}
-                  </Text>
-                  <Text style={[styles.shopItemDesc, { color: colors.muted }]}>
-                    {t("settings_remove_ads_desc")}
-                  </Text>
-                </View>
-              </View>
-              <View style={[styles.shopItemPrice, { backgroundColor: colors.primary + "20" }]}>
-                <Text style={[styles.shopItemPriceText, { color: colors.primary }]}>
-                  {t("settings_remove_ads_price")}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.shopItemDone}>
-              <Text style={styles.shopItemEmoji}>✅</Text>
-              <Text style={[styles.shopItemDoneText, { color: colors.success }]}>
-                {t("settings_ads_removed")}
-              </Text>
-            </View>
-          )} */}
         </View>
 
         {/* ── Sobre ── */}
