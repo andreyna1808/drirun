@@ -158,19 +158,10 @@ export default function OnboardingScreen() {
   const goToNext = () => {
     if (step === 0) setStep(1);
     else if (step === 1 && validateProfile()) setStep(2);
-    else if (step === 2 && validateGoal()) setStep(3);
-    else if (step === 3) {
-      // Só permite finalizar se o usuário já tiver escolhido (permitir ou negar)
-      if (notificationsEnabled !== null) {
-        handleFinish();
-      } else {
-        Alert.alert(
-          t("onboarding_notifications_required_title") || "Escolha necessária",
-          t("onboarding_notifications_required_message") || "Por favor, escolha se deseja receber notificações ou não para continuar.",
-          [{ text: t("ok") || "OK" }]
-        );
-      }
-    }
+    else if (step === 2 && validateGoal()) {
+      setStep(3)
+      setNotificationsEnabled(null);
+    } else if (step === 3) handleFinish();
   };
 
   const goToPrev = () => {
@@ -500,7 +491,19 @@ export default function OnboardingScreen() {
                 step === 0 && { flex: 1 },
                 step === 3 && notificationsEnabled === null && { opacity: 0.5, backgroundColor: colors.muted }
               ]}
-              onPress={goToNext}
+              onPress={() => {
+                if ((step == 3 && typeof notificationsEnabled == "boolean") || step == 2 || step == 1 || step == 0) {
+                  goToNext();
+                  console.log("AQUIEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+                  return
+                } else {
+                  Alert.alert(
+                    t("onboarding_notifications_required_title") || "Escolha necessária",
+                    t("onboarding_notifications_required_message") || "Por favor, escolha se deseja receber notificações ou não para continuar.",
+                    [{ text: t("ok") || "OK" }]
+                  );
+                }
+              }}
               disabled={step === 3 && notificationsEnabled === null}
             >
               <Text style={styles.nextButtonText}>{step === 3 ? t("onboarding_finish") : t("next")}</Text>
@@ -508,7 +511,7 @@ export default function OnboardingScreen() {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 

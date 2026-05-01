@@ -9,7 +9,14 @@ export default function HomeScreen() {
 
     // Setup das notificações dentro do componente — evita side-effects no top-level do
     // módulo, que podem derrubar o boot se o nativo do expo-notifications não estiver
-    // disponível (ex: rodando em Expo Go em SDK 53+).
+    // disponível.
+    //
+    // ⚠ NÃO pedir permissão aqui. A permissão de notificação SÓ deve ser solicitada
+    // quando o usuário explicitamente clicar em "Ativar notificações" no onboarding
+    // (ou em alguma outra tela que justifique o pedido). Pedir no boot do app é
+    // anti-padrão — derruba a taxa de aceitação e assusta o usuário.
+    //
+    // Aqui só fazemos config silenciosa: handler de exibição e canal Android.
     useEffect(() => {
         if (Platform.OS === "web") return;
 
@@ -35,16 +42,6 @@ export default function HomeScreen() {
                 lightColor: "#FF231F7C",
             }).catch((e) => console.warn("[Notif] setNotificationChannelAsync falhou:", e));
         }
-
-        // Pede permissão de notificação no Android 13+ — sem isso, scheduleNotificationAsync
-        // silenciosamente falha em devices novos.
-        Notifications.getPermissionsAsync()
-            .then(({ granted, canAskAgain }) => {
-                if (!granted && canAskAgain) {
-                    return Notifications.requestPermissionsAsync();
-                }
-            })
-            .catch((e) => console.warn("[Notif] permissão falhou:", e));
     }, []);
 
     useEffect(() => {
