@@ -1,10 +1,10 @@
-import {
-    StyleSheet,
-} from "react-native";
+import { StyleSheet } from "react-native";
 
 export const OnboardingStyles = (colors: any) => {
     return StyleSheet.create({
-        stepContainer: { width: "100%", alignItems: "center", display: "flex", flex: 1, justifyContent: "space-between", marginTop: 24 },
+        // removeu flex:1 e justifyContent: space-between
+        stepContainer: { width: "100%", alignItems: "center", marginTop: 8 },
+
         heroEmoji: { fontSize: 72, marginBottom: 8 },
         appName: { fontSize: 40, fontWeight: "900", letterSpacing: 3 },
         tagline: { fontSize: 16, marginBottom: 20, letterSpacing: 1, color: colors.muted },
@@ -15,7 +15,7 @@ export const OnboardingStyles = (colors: any) => {
         featureText: { fontSize: 15, flex: 1, color: colors.foreground },
         stepTitle: { fontSize: 25, fontWeight: "800", marginBottom: 2, textAlign: "center", color: colors.foreground },
         stepSubtitle: { fontSize: 15, textAlign: "center", marginBottom: 4, lineHeight: 22, color: colors.muted },
-        form: { width: "100%", marginBottom: 12, height: "85%" },
+        form: { width: "100%", marginBottom: 12 },
         label: { fontSize: 13, marginBottom: 6, fontWeight: "600", color: colors.muted },
         input: {
             borderWidth: 1,
@@ -78,14 +78,14 @@ export const OnboardingStyles = (colors: any) => {
         petPreviewText: { fontSize: 16, fontWeight: "700", marginBottom: 6, textAlign: "center", color: colors.foreground },
         petPreviewSub: { fontSize: 13, textAlign: "center", lineHeight: 20, color: colors.muted },
         notifEmoji: { fontSize: 64, marginBottom: 8 },
-        notifButtons: { width: "100%", gap: 12, marginTop: 24, height: "60%" },
+        notifButtons: { width: "100%", gap: 12, marginTop: 24 }, // removeu altura fixa
         notifAllowButton: { paddingVertical: 16, borderRadius: 10, alignItems: "center", backgroundColor: colors.primary },
         notifAllowText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
         notifDenyButton: { paddingVertical: 14, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
         notifDenyText: { fontSize: 15, fontWeight: "600", color: colors.muted },
         notifConfirm: { borderRadius: 10, padding: 12, borderWidth: 1, marginBottom: 20, width: "100%", alignItems: "center", backgroundColor: colors.success + "20", borderColor: colors.success },
         notifConfirmText: { fontSize: 15, fontWeight: "700", color: colors.success },
-        timePickerSection: { width: "100%", alignItems: "center", height: "70%" },
+        timePickerSection: { width: "100%", alignItems: "center" }, // removeu altura fixa
         timeLabel: { fontSize: 18, fontWeight: "700", marginBottom: 20, textAlign: "center", color: colors.foreground },
         timeHint: { fontSize: 13, marginBottom: 16, textAlign: "center", color: colors.muted },
         timePickerButton: {
@@ -111,14 +111,13 @@ export const OnboardingStyles = (colors: any) => {
             borderColor: colors.primary,
         },
         unitText: { fontSize: 14, fontWeight: "600", color: colors.muted },
-        notifDeniedSection: { width: "100%", alignItems: "center", height: "20%" },
+        notifDeniedSection: { width: "100%", alignItems: "center" }, // removeu altura fixa
         notifDeniedCard: { borderRadius: 10, padding: 16, borderWidth: 1, width: "100%", backgroundColor: colors.surface, borderColor: colors.border },
         notifDeniedText: { fontSize: 14, lineHeight: 22, textAlign: "center", color: colors.muted },
+
         navigationButtons: {
             flexDirection: "row",
             justifyContent: "space-between",
-            marginTop: 24,
-            width: "100%",
             gap: 12,
         },
         navButton: {
@@ -146,4 +145,4 @@ export const OnboardingStyles = (colors: any) => {
             color: "#FFF",
         },
     });
-}
+};

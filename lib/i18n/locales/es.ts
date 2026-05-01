@@ -486,4 +486,12 @@ export default {
   tracking_short_run_message: "Debes recorrer al menos 100 metros para registrar la actividad.",
   tracking_finish_confirm_title: "¿Finalizar carrera?",
   tracking_finish_confirm_message: "Distancia: {{distance}} km",
+
+  welcome_phrases: [
+    "El viaje de mil millas comienza con un solo paso.",
+    "No necesitas ser rápido. Solo necesitas ir.",
+    "Cada carrera te hace más fuerte que ayer.",
+    "Tu Fénix espera renacer contigo.",
+    "La constancia vence al talento cuando el talento no es constante."
+  ]
 };

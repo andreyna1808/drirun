@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import {
     RewardedAd,
     RewardedAdEventType,
@@ -7,19 +8,19 @@ import {
 } from "react-native-google-mobile-ads";
 
 const IS_DEV = __DEV__;
-const IS_IOS = Platform.OS === "ios";
+const extra = Constants.expoConfig?.extra || {};
 
 export const BANNER_AD_UNIT_ID = IS_DEV
     ? TestIds.BANNER
-    : IS_IOS
-        ? process.env.IOS_ADMOB_BANNER_ID!
-        : process.env.ANDROID_ADMOB_BANNER_ID!;
+    : Platform.OS === "ios"
+        ? extra.IOS_ADMOB_BANNER_ID ?? "ca-app-pub-7257014034403853/6065347522"  // fallback seguro
+        : extra.ANDROID_ADMOB_BANNER_ID ?? "ca-app-pub-7257014034403853/8914037993";
 
 export const REWARDED_AD_UNIT_ID = IS_DEV
     ? TestIds.REWARDED
-    : IS_IOS
-        ? process.env.IOS_ADMOB_REWARDED_ID!
-        : process.env.ANDROID_ADMOB_REWARDED_ID!;
+    : Platform.OS === "ios"
+        ? extra.IOS_ADMOB_REWARDED_ID ?? "ca-app-pub-7257014034403853/4396817292"
+        : extra.ANDROID_ADMOB_REWARDED_ID ?? "ca-app-pub-7257014034403853/8503897897";
 
 export function useRewardedAd(onRewarded: () => void) {
     const [loaded, setLoaded] = useState(false);
@@ -31,13 +32,9 @@ export function useRewardedAd(onRewarded: () => void) {
         });
         const unsubEarned = rewarded.addAdEventListener(
             RewardedAdEventType.EARNED_REWARD,
-            () => {
-                onRewarded();
-            }
+            () => onRewarded()
         );
-
         rewarded.load();
-
         return () => {
             unsubLoad();
             unsubEarned();
@@ -50,6 +47,5 @@ export function useRewardedAd(onRewarded: () => void) {
             setLoaded(false);
         }
     }
-
     return { showAd, loaded };
 }

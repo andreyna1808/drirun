@@ -127,7 +127,7 @@ export default function RunSummaryScreen() {
 
   if (!run) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background, marginBottom: 60 }]}>
         <Text style={[styles.errorText, { color: colors.muted }]}>{t("run_not_found")}</Text>
         <TouchableOpacity onPress={() => router.replace("/(tabs)")}>
           <Text style={[styles.backLink, { color: colors.primary }]}>{t("back_to_home")}</Text>

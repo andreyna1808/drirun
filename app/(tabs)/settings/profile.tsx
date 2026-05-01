@@ -68,7 +68,7 @@ export default function EditProfileScreen() {
                             onPress={() => setSex(s)}
                         >
                             <Text style={[styles.sexText, sex === s && { color: "#FFF" }]}>
-                                {s === "male" ? t("onboarding_sex_male") : s === "female" ? t("onboarding_sex_female") : t("onboarding_sex_other")}
+                                {s === "male" ? t("onboarding_sex_male") : s === "female"}
                             </Text>
                         </TouchableOpacity>
                     ))}

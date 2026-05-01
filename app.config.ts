@@ -77,6 +77,14 @@ const config: ExpoConfig = {
     ORIGIN_YOUTUBE_CHANEL_URL: process.env.ORIGIN_YOUTUBE_CHANEL_URL,
     ORIGIN_GITHUB_URL: process.env.ORIGIN_GITHUB_URL,
     ORIGIN_HELP_APP: process.env.ORIGIN_HELP_APP,
+    eas: {
+      projectId: process.env.EAS_PROJECT_ID,
+    },
+
+    ANDROID_ADMOB_BANNER_ID: process.env.ANDROID_ADMOB_BANNER_ID,
+    ANDROID_ADMOB_REWARDED_ID: process.env.ANDROID_ADMOB_REWARDED_ID,
+    IOS_ADMOB_BANNER_ID: process.env.IOS_ADMOB_BANNER_ID,
+    IOS_ADMOB_REWARDED_ID: process.env.IOS_ADMOB_REWARDED_ID,
   },
 };
 

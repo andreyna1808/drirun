@@ -486,4 +486,12 @@ export default {
   tracking_short_run_message: "You need to cover at least 100 meters to record the activity.",
   tracking_finish_confirm_title: "Finish run?",
   tracking_finish_confirm_message: "Distance: {{distance}} km",
+
+  welcome_phrases: [
+    "The journey of a thousand miles begins with a single step.",
+    "You don't have to be fast. You just have to go.",
+    "Every run makes you stronger than yesterday.",
+    "Your Phoenix is waiting to be reborn with you.",
+    "Consistency beats talent when talent isn't consistent."
+  ]
 };

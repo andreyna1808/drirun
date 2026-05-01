@@ -5,9 +5,10 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Keyboard,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -19,14 +20,6 @@ import { useColors } from "@/hooks/use-colors";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { OnboardingStyles } from "@/styles/onboarding.styles";
 
-const WELCOME_PHRASES = [
-  "A jornada de mil milhas começa com um único passo.",
-  "Você não precisa ser rápido. Você só precisa ir.",
-  "Cada corrida te torna mais forte do que ontem.",
-  "Sua Fênix está esperando para renascer com você.",
-  "Consistência bate talento quando o talento não é consistente.",
-];
-
 export default function OnboardingScreen() {
   const { t } = useTranslation();
   const { dispatch, state } = useApp();
@@ -34,6 +27,8 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
@@ -49,9 +44,29 @@ export default function OnboardingScreen() {
   const [imperialHeightText, setImperialHeightText] = useState("");
   const [imperialWeightText, setImperialWeightText] = useState("");
 
-  const phrase = useRef(WELCOME_PHRASES[Math.floor(Math.random() * WELCOME_PHRASES.length)]).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<{ [key: string]: TextInput | null }>({});
 
-  // Pré‑carrega dados se já existir algum perfil (ex.: retorno após interrupção)
+  const welcomePhrases = t("welcome_phrases", { returnObjects: true }) as string[];
+  const phrase = useRef(welcomePhrases[Math.floor(Math.random() * welcomePhrases.length)]).current;
+
+  // Listener para teclado
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardVisible(true);
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+    });
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  // Pré‑carrega dados
   useEffect(() => {
     if (state.profile) {
       setName(state.profile.name);
@@ -70,14 +85,11 @@ export default function OnboardingScreen() {
     }
   }, []);
 
-  // Se o estado já estiver como onboarded (ex.: retomou de um estado salvo), redireciona imediatamente
   useEffect(() => {
-    if (state.isOnboarded) {
-      router.replace("/(tabs)");
-    }
+    if (state.isOnboarded) router.replace("/(tabs)");
   }, [state.isOnboarded]);
 
-  // Conversões imperiais/métricas
+  // Conversões (mesmo código)
   const cmToImperial = (cm: number) => {
     const totalInches = cm / 2.54;
     const feet = Math.floor(totalInches / 12);
@@ -87,24 +99,6 @@ export default function OnboardingScreen() {
   const imperialToCm = (feet: number, inches: number) => (feet * 12 + inches) * 2.54;
   const kgToLb = (kg: number) => kg * 2.20462;
   const lbToKg = (lb: number) => lb / 2.20462;
-
-  const getDisplayHeight = () => {
-    if (!heightCm) return "";
-    const cm = parseFloat(heightCm);
-    if (isNaN(cm)) return "";
-    if (useImperial) {
-      const { feet, inches } = cmToImperial(cm);
-      return `${feet}'${inches}"`;
-    }
-    return cm.toString();
-  };
-  const getDisplayWeight = () => {
-    if (!weightKg) return "";
-    const kg = parseFloat(weightKg);
-    if (isNaN(kg)) return "";
-    if (useImperial) return Math.round(kgToLb(kg)).toString();
-    return kg.toString();
-  };
 
   useEffect(() => {
     if (useImperial) {
@@ -144,7 +138,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  // Validações
   const validateProfile = (): boolean => {
     if (!name.trim()) { Alert.alert(t("error"), t("error_name_required")); return false; }
     const ageNum = parseInt(age);
@@ -179,75 +172,32 @@ export default function OnboardingScreen() {
       const hour = time.getHours();
       const minute = time.getMinutes();
       await Notifications.scheduleNotificationAsync({
-        content: {
-          title: t("notification_title", { petName }),
-          body: t("notification_body", { userName }),
-          sound: true,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-        },
+        content: { title: t("notification_title", { petName }), body: t("notification_body", { userName }), sound: true },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
       });
-    } catch (e) {
-      console.warn("Erro ao agendar notificação:", e);
-    }
+    } catch (e) { console.warn("Erro ao agendar notificação:", e); }
   }
 
   async function requestNotificationPermission(): Promise<boolean> {
-    try {
-      const { status } = await Notifications.requestPermissionsAsync();
-      return status === "granted";
-    } catch {
-      return false;
-    }
+    try { const { status } = await Notifications.requestPermissionsAsync(); return status === "granted"; } catch { return false; }
   }
 
   async function handleAllowNotifications() {
     const granted = await requestNotificationPermission();
     if (granted) setNotificationsEnabled(true);
-    else Alert.alert(
-      t("permission_denied_title"),
-      t("permission_denied_message"),
-      [{ text: t("ok"), onPress: () => setNotificationsEnabled(false) }]
-    );
+    else Alert.alert(t("permission_denied_title"), t("permission_denied_message"), [{ text: t("ok"), onPress: () => setNotificationsEnabled(false) }]);
   }
-  function handleDenyNotifications() {
-    setNotificationsEnabled(false);
-  }
+  function handleDenyNotifications() { setNotificationsEnabled(false); }
 
-  // HANDLE FINISH – salva e navega imediatamente
   const handleFinish = useCallback(async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const profile = {
-      name: name.trim(),
-      age: parseInt(age),
-      weight: parseFloat(weightKg),
-      height: parseFloat(heightCm),
-      sex: sex as "male" | "female" | "other",
-    };
-
-    if (notificationsEnabled) {
-      await scheduleNotification("Meu Pet", profile.name, selectedTime);
-    }
-
-    dispatch({
-      type: "COMPLETE_ONBOARDING",
-      payload: {
-        profile,
-        goalDays: parseInt(goalDays),
-        notificationsEnabled: notificationsEnabled ?? false,
-        notificationHour: notificationsEnabled
-          ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}`
-          : null,
-      },
-    });
+    const profile = { name: name.trim(), age: parseInt(age), weight: parseFloat(weightKg), height: parseFloat(heightCm), sex: sex as "male" | "female" | "other" };
+    if (notificationsEnabled) await scheduleNotification("Meu Pet", profile.name, selectedTime);
+    dispatch({ type: "COMPLETE_ONBOARDING", payload: { profile, goalDays: parseInt(goalDays), notificationsEnabled: notificationsEnabled ?? false, notificationHour: notificationsEnabled ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}` : null } });
   }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch]);
 
   const styles = OnboardingStyles(colors);
 
-  // ─── Features (traduzidas) ───
   const features = [
     { icon: "🏃", textKey: "feature_gps" },
     { icon: "🔥", textKey: "feature_pet" },
@@ -255,6 +205,16 @@ export default function OnboardingScreen() {
     { icon: "🎯", textKey: "feature_goals" },
     { icon: "💎", textKey: "feature_gems" },
   ];
+
+  // Função auxiliar para rolar até um input específico
+  const scrollToInput = (refName: string) => {
+    const ref = inputRefs.current[refName];
+    if (ref && scrollViewRef.current) {
+      ref.measureLayout(scrollViewRef.current as any, (x, y) => {
+        scrollViewRef.current?.scrollTo({ y: y - 80, animated: true });
+      }, () => { });
+    }
+  };
 
   const renderStepContent = () => {
     switch (step) {
@@ -282,28 +242,38 @@ export default function OnboardingScreen() {
               <Text style={[styles.stepTitle, { color: colors.foreground }]}>{t("onboarding_profile_title")}</Text>
               <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_profile_subtitle")}</Text>
             </View>
-
             <View style={styles.form}>
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_name_label")}</Text>
-              <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t("onboarding_name_placeholder")} placeholderTextColor={colors.muted} />
+              <TextInput
+                ref={ref => { inputRefs.current["name"] = ref; }}
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder={t("onboarding_name_placeholder")}
+                placeholderTextColor={colors.muted}
+                onFocus={() => scrollToInput("name")}
+              />
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_sex_label")}</Text>
               <View style={styles.sexRow}>
                 {[
                   { key: "male" as const, label: t("onboarding_sex_male") },
                   { key: "female" as const, label: t("onboarding_sex_female") },
-                  { key: "other" as const, label: t("onboarding_sex_other") },
                 ].map((s) => (
-                  <TouchableOpacity
-                    key={s.key}
-                    style={[styles.sexButton, sex === s.key && { borderColor: colors.primary, backgroundColor: colors.primary + "20" }]}
-                    onPress={() => setSex(s.key)}
-                  >
+                  <TouchableOpacity key={s.key} style={[styles.sexButton, sex === s.key && { borderColor: colors.primary, backgroundColor: colors.primary + "20" }]} onPress={() => setSex(s.key)}>
                     <Text style={[styles.sexButtonText, { color: sex === s.key ? colors.primary : colors.muted }]}>{s.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_age_label")}</Text>
-              <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" placeholder={t("onboarding_age_placeholder")} />
+              <TextInput
+                ref={ref => { inputRefs.current["age"] = ref; }}
+                style={styles.input}
+                value={age}
+                onChangeText={setAge}
+                keyboardType="numeric"
+                placeholder={t("onboarding_age_placeholder")}
+                onFocus={() => scrollToInput("age")}
+              />
               <View style={{ flexDirection: "row", marginBottom: 8, marginTop: 12 }}>
                 <TouchableOpacity style={[styles.unitButton, !useImperial && styles.unitButtonActive]} onPress={() => setUseImperial(false)}>
                   <Text style={[styles.unitText, !useImperial && { color: "#FFF" }]}>cm / kg</Text>
@@ -314,13 +284,29 @@ export default function OnboardingScreen() {
               </View>
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_height_label")}</Text>
               {!useImperial ? (
-                <TextInput style={styles.input} value={heightCm} onChangeText={setHeightCm} keyboardType="numeric" placeholder="cm (ex: 175)" />
+                <TextInput
+                  ref={ref => { inputRefs.current["height"] = ref; }}
+                  style={styles.input}
+                  value={heightCm}
+                  onChangeText={setHeightCm}
+                  keyboardType="numeric"
+                  placeholder="cm (ex: 175)"
+                  onFocus={() => scrollToInput("height")}
+                />
               ) : (
                 <TextInput style={styles.input} value={imperialHeightText} onChangeText={setImperialHeightText} onBlur={onImperialHeightBlur} placeholder="ex: 5'10\" />
               )}
               <Text style={[styles.label, { color: colors.muted }]}>{t("onboarding_weight_label")}</Text>
               {!useImperial ? (
-                <TextInput style={styles.input} value={weightKg} onChangeText={setWeightKg} keyboardType="numeric" placeholder="kg (ex: 70)" />
+                <TextInput
+                  ref={ref => { inputRefs.current["weight"] = ref; }}
+                  style={styles.input}
+                  value={weightKg}
+                  onChangeText={setWeightKg}
+                  keyboardType="numeric"
+                  placeholder="kg (ex: 70)"
+                  onFocus={() => scrollToInput("weight")}
+                />
               ) : (
                 <TextInput style={styles.input} value={imperialWeightText} onChangeText={setImperialWeightText} onBlur={onImperialWeightBlur} keyboardType="numeric" placeholder="lb (ex: 154)" />
               )}
@@ -334,6 +320,7 @@ export default function OnboardingScreen() {
             <Text style={[styles.stepSubtitle, { color: colors.muted }]}>{t("onboarding_goal_subtitle")}</Text>
             <View style={styles.goalContainer}>
               <TextInput
+                ref={ref => { inputRefs.current["goal"] = ref; }}
                 style={styles.goalInput}
                 value={goalDays}
                 onChangeText={(text) => setGoalDays(text.replace(/[^0-9]/g, ""))}
@@ -345,6 +332,7 @@ export default function OnboardingScreen() {
                 }}
                 keyboardType="numeric"
                 maxLength={3}
+                onFocus={() => scrollToInput("goal")}
               />
               <Text style={[styles.goalLabel, { color: colors.muted }]}>{t("onboarding_goal_label")}</Text>
               <Text style={[styles.goalHint, { color: colors.muted }]}>{t("onboarding_goal_hint")}</Text>
@@ -418,48 +406,53 @@ export default function OnboardingScreen() {
     }
   };
 
+  // LAYOUT DEFINITIVO: sem absolute, sem KeyboardAvoidingView, com Flex
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1, height: "100%" }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
+      <View style={{ flex: 1 }}>
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
             paddingHorizontal: 24,
-            height: "100%",
+            paddingTop: 20,
+            paddingBottom: keyboardVisible ? keyboardHeight + 20 : insets.bottom + 20,
           }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {renderStepContent()}
-          <View>
-            <StepIndicator current={step} total={4} colors={colors} />
-            <View style={[styles.navigationButtons]}>
-              {step > 0 && (
-                <TouchableOpacity style={[styles.navButton, styles.backButton]} onPress={goToPrev}>
-                  <Text style={styles.backButtonText}>← {t("back")}</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={[styles.navButton, styles.nextButton, step === 0 && { flex: 1 }]}
-                onPress={goToNext}
-              >
-                <Text style={styles.nextButtonText}>{step === 3 ? t("onboarding_finish") : t("next")}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+
+        {/* Botões fixos na parte inferior (sem position absolute) */}
+        <View
+          style={{
+            paddingHorizontal: 24,
+            paddingBottom: insets.bottom,
+            backgroundColor: colors.background,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}
+        >
+          <StepIndicator current={step} total={4} colors={colors} />
+          <View style={[styles.navigationButtons, { marginTop: 12 }]}>
+            {step > 0 && (
+              <TouchableOpacity style={[styles.navButton, styles.backButton]} onPress={goToPrev}>
+                <Text style={styles.backButtonText}>← {t("back")}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.navButton, styles.nextButton, step === 0 && { flex: 1 }]}
+              onPress={goToNext}
+            >
+              <Text style={styles.nextButtonText}>{step === 3 ? t("onboarding_finish") : t("next")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
 
-// Componente StepIndicator (mantido)
 function StepIndicator({ current, total, colors }: { current: number; total: number; colors: any }) {
   return (
     <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 8 }}>

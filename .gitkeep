@@ -1,0 +1,4 @@
+android/app/build.gradle
+adrpod/app/drirun-release.keystore
+
+android/gradle.properties
