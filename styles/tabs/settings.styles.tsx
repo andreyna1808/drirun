@@ -126,6 +126,14 @@ export const SettingsStyles = (colors: any) => {
             borderWidth: 1,
         },
         dangerButtonText: { fontSize: 15, fontWeight: "700" },
+        timePickerButton: {
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            borderRadius: 10,
+            borderWidth: 1,
+            alignItems: "center",
+            justifyContent: "center",
+        },
     });
 }
 

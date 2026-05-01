@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TextInput,
   Alert,
   Switch,
+  Platform,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
@@ -21,6 +22,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { SettingsStyles } from "@/styles/tabs/settings.styles";
 import { SectionHeader } from "@/components/settings/section-header";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function SettingsScreen() {
   const { state, dispatch } = useApp();
@@ -32,6 +34,19 @@ export default function SettingsScreen() {
   const styles = SettingsStyles(colors);
   const notifEnabled = state.notifications?.enabled ?? false;
   const notifHour = state.notifications?.hour ?? "08";
+  // Dentro do componente SettingsScreen:
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempTime, setTempTime] = useState(new Date());
+
+  // UseEffect para inicializar o tempTime a partir do estado atual
+  useEffect(() => {
+    if (state.notifications?.hour) {
+      const [hour, minute] = state.notifications.hour.split(":").map(Number);
+      const date = new Date();
+      date.setHours(hour || 8, minute || 0, 0);
+      setTempTime(date);
+    }
+  }, [state.notifications?.hour]);
 
   function handleGoalChange(text: string) {
     setGoalDaysInput(text.replace(/[^0-9]/g, ""));
@@ -86,18 +101,23 @@ export default function SettingsScreen() {
     });
   }
 
-  function handleNotificationHourChange(text: string) {
-    const cleaned = text.replace(/[^0-9]/g, "").slice(0, 2);
-    const hour = parseInt(cleaned, 10);
-    if (!isNaN(hour) && hour >= 0 && hour <= 23) {
+  function openTimePicker() {
+    if (!notifEnabled) return;
+    setShowTimePicker(true);
+  }
+
+  function onTimeChange(event: any, selectedDate?: Date) {
+    if (selectedDate) {
+      const hours = selectedDate.getHours();
+      const minutes = selectedDate.getMinutes();
+      const formatted = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       dispatch({
         type: "UPDATE_NOTIFICATIONS",
-        payload: {
-          enabled: state.notifications?.enabled ?? false,
-          hour: cleaned.padStart(2, "0"),
-        },
+        payload: { enabled: notifEnabled, hour: formatted },
       });
+      setTempTime(selectedDate);
     }
+    setShowTimePicker(false);
   }
 
   function handleReset() {
@@ -271,17 +291,22 @@ export default function SettingsScreen() {
               <Text style={[styles.notifLabel, { color: colors.foreground }]}>
                 ⏰ {t("settings_notifications_time")}
               </Text>
-              <View style={styles.notifHourInput}>
-                <TextInput
-                  style={[styles.hourInput, { color: colors.foreground, borderColor: colors.border }]}
-                  value={String(notifHour)}
-                  onChangeText={handleNotificationHourChange}
-                  keyboardType="numeric"
-                  maxLength={2}
-                  returnKeyType="done"
+              <TouchableOpacity
+                style={[styles.timePickerButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={openTimePicker}
+              >
+                <Text style={{ color: colors.primary, fontSize: 18, fontWeight: "600" }}>
+                  {state.notifications?.hour ?? "08:00"}
+                </Text>
+              </TouchableOpacity>
+              {showTimePicker && (
+                <DateTimePicker
+                  value={tempTime}
+                  mode="time"
+                  display="spinner"
+                  onValueChange={onTimeChange}
                 />
-                <Text style={[styles.hourLabel, { color: colors.muted }]}>h (0–23)</Text>
-              </View>
+              )}
             </View>
           )}
         </View>

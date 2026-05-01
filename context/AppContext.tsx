@@ -15,7 +15,7 @@ export interface UserProfile {
   age: number;
   weight: number; // kg
   height: number; // cm
-  sex: "male" | "female" | "other";
+  sex: "male" | "female";
 }
 
 export interface RunRecord {

@@ -21,7 +21,7 @@ export default function EditProfileScreen() {
     const [age, setAge] = useState(String(state.profile?.age ?? ""));
     const [height, setHeight] = useState(String(state.profile?.height ?? ""));
     const [weight, setWeight] = useState(String(state.profile?.weight ?? ""));
-    const [sex, setSex] = useState<"male" | "female" | "other">(state.profile?.sex ?? "other");
+    const [sex, setSex] = useState<"male" | "female">(state.profile?.sex ?? "female");
 
     const styles = SettingsProfileStyles(colors);
 
@@ -61,14 +61,14 @@ export default function EditProfileScreen() {
 
                 <Text style={styles.label}>{t("onboarding_sex_label")}</Text>
                 <View style={styles.sexRow}>
-                    {(["male", "female", "other"] as const).map((s) => (
+                    {(["male", "female"] as const).map((s) => (
                         <TouchableOpacity
                             key={s}
                             style={[styles.sexBtn, sex === s && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                             onPress={() => setSex(s)}
                         >
                             <Text style={[styles.sexText, sex === s && { color: "#FFF" }]}>
-                                {s === "male" ? t("onboarding_sex_male") : s === "female"}
+                                {s === "male" ? t("onboarding_sex_male") : t("onboarding_sex_female")}
                             </Text>
                         </TouchableOpacity>
                     ))}

@@ -208,7 +208,7 @@ export default function OnboardingScreen() {
 
   const handleFinish = useCallback(async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const profile = { name: name.trim(), age: parseInt(age), weight: parseFloat(weightKg), height: parseFloat(heightCm), sex: sex as "male" | "female" | "other" };
+    const profile = { name: name.trim(), age: parseInt(age), weight: parseFloat(weightKg), height: parseFloat(heightCm), sex: sex as "male" | "female" };
     if (notificationsEnabled) await scheduleNotification("Meu Pet", profile.name, selectedTime);
     dispatch({ type: "COMPLETE_ONBOARDING", payload: { profile, goalDays: parseInt(goalDays), notificationsEnabled: notificationsEnabled ?? false, notificationHour: notificationsEnabled ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}` : null } });
   }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch]);
