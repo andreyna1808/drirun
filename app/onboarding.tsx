@@ -159,8 +159,20 @@ export default function OnboardingScreen() {
     if (step === 0) setStep(1);
     else if (step === 1 && validateProfile()) setStep(2);
     else if (step === 2 && validateGoal()) setStep(3);
-    else if (step === 3) handleFinish();
+    else if (step === 3) {
+      // Só permite finalizar se o usuário já tiver escolhido (permitir ou negar)
+      if (notificationsEnabled !== null) {
+        handleFinish();
+      } else {
+        Alert.alert(
+          t("onboarding_notifications_required_title") || "Escolha necessária",
+          t("onboarding_notifications_required_message") || "Por favor, escolha se deseja receber notificações ou não para continuar.",
+          [{ text: t("ok") || "OK" }]
+        );
+      }
+    }
   };
+
   const goToPrev = () => {
     if (step > 0) setStep(step - 1);
   };
@@ -406,7 +418,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  // LAYOUT DEFINITIVO: sem absolute, sem KeyboardAvoidingView, com Flex
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ flex: 1 }}>
@@ -415,7 +426,7 @@ export default function OnboardingScreen() {
           contentContainerStyle={{
             paddingHorizontal: 24,
             paddingTop: 20,
-            paddingBottom: keyboardVisible ? keyboardHeight + 20 : insets.bottom + 20,
+            paddingBottom: keyboardVisible ? keyboardHeight + 20 : insets.bottom
           }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -441,8 +452,14 @@ export default function OnboardingScreen() {
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              style={[styles.navButton, styles.nextButton, step === 0 && { flex: 1 }]}
+              style={[
+                styles.navButton,
+                styles.nextButton,
+                step === 0 && { flex: 1 },
+                step === 3 && notificationsEnabled === null && { opacity: 0.5, backgroundColor: colors.muted } // exemplo visual
+              ]}
               onPress={goToNext}
+              disabled={step === 3 && notificationsEnabled === null}
             >
               <Text style={styles.nextButtonText}>{step === 3 ? t("onboarding_finish") : t("next")}</Text>
             </TouchableOpacity>

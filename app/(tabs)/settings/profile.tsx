@@ -47,7 +47,7 @@ export default function EditProfileScreen() {
             },
         });
         Alert.alert(t("success"), t("profile_save_success"), [
-            { text: t("ok"), onPress: () => router.back() },
+            { text: t("ok"), onPress: () => router.push("/settings") },
         ]);
     };
 

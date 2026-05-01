@@ -194,7 +194,7 @@ export default function AboutScreen() {
         {/* Fechar */}
         <TouchableOpacity
           style={[styles.closeButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => router.push('/settings')}
+          onPress={() => router.push("/settings")}
         >
           <Text style={[styles.closeButtonText, { color: colors.foreground }]}>
             {t("close")}
