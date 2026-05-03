@@ -16,7 +16,7 @@ export const formatDuration = (seconds: number): string => {
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
     if (h > 0) return `${h}h ${m}min`;
-    if (m > 0) return `${m}min ${String(s).padStart(2, "0")}s`;
+    if (m > 0) return `${m}' ${String(s).padStart(2, "0")}s`;
     return `${s}s`;
 }
 
@@ -24,7 +24,7 @@ export const formatPace = (paceSecondsPerKm: number): string => {
     if (!isFinite(paceSecondsPerKm) || paceSecondsPerKm <= 0) return "--:--";
     const m = Math.floor(paceSecondsPerKm / 60);
     const s = Math.round(paceSecondsPerKm % 60);
-    return `${m}:${String(s).padStart(2, "0")}min`;
+    return `${m}:${String(s).padStart(2, "0")} min/km`;
 }
 
 export const calculateStreak = (runs: Array<{ date: string }>): number => {

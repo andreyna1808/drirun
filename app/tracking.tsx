@@ -264,6 +264,7 @@ export default function TrackingScreen() {
     };
 
     dispatch({ type: "ADD_RUN", payload: runRecord });
+    dispatch({ type: "ADD_GEMS", payload: 25 });
 
     // 5. Breve delay pra overlay aparecer, depois navega
     setTimeout(() => {
@@ -281,12 +282,38 @@ export default function TrackingScreen() {
   }, [stopAll]);
 
   const finishRun = useCallback(() => {
+    // Pausa o cronômetro IMEDIATAMENTE — feedback visual instantâneo ao toque
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (!isPausedRef.current) {
+      pauseStartRef.current = Date.now();
+      isPausedRef.current = true;
+      setIsPaused(true);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+
+    // Se o usuário cancelar o Alert, retoma o timer de onde parou
+    const resumeTimer = () => {
+      if (isFinishingRef.current) return;
+      totalPausedMsRef.current += Date.now() - pauseStartRef.current;
+      pauseStartRef.current = 0;
+      isPausedRef.current = false;
+      setIsPaused(false);
+      timerRef.current = setInterval(() => {
+        if (isPausedRef.current) return;
+        const elapsed = getElapsedSeconds();
+        if (elapsed !== durationRef.current) {
+          durationRef.current = elapsed;
+          setDuration(elapsed);
+        }
+      }, 100);
+    };
+
     if (distanceRef.current < 10) {
       Alert.alert(
         t("tracking_short_run_title"),
         t("tracking_short_run_message"),
         [
-          { text: t("tracking_continue"), style: "cancel" },
+          { text: t("tracking_continue"), style: "cancel", onPress: resumeTimer },
           { text: t("tracking_cancel"), onPress: cancelRun, style: "destructive" },
         ]
       );
@@ -299,11 +326,11 @@ export default function TrackingScreen() {
         distance: (distanceRef.current / 1000).toFixed(2),
       }),
       [
-        { text: t("tracking_continue"), style: "cancel" },
+        { text: t("tracking_continue"), style: "cancel", onPress: resumeTimer },
         { text: t("tracking_finish"), onPress: confirmFinish },
       ]
     );
-  }, [cancelRun, confirmFinish, t]);
+  }, [cancelRun, confirmFinish, t, getElapsedSeconds]);
 
   // ── Iniciar corrida ────────────────────────────────────────────────────────
   const startRun = useCallback(async () => {

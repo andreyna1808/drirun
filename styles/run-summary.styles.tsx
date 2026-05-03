@@ -128,7 +128,6 @@ export const RunSummaryStyles = (colors: any) => {
             lineHeight: 22,
         },
         homeButton: {
-            marginHorizontal: 16,
             paddingVertical: 16,
             borderRadius: 16,
             alignItems: "center",

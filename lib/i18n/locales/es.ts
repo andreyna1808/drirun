@@ -98,7 +98,7 @@ export default {
   tracking_calories: "Kcal",
 
   // Run Summary
-  run_summary_title: "¡Actividad Completada! 🎉",
+  run_summary_title: "¡Actividad Completada!",
   run_summary_subtitle: "¡Buen trabajo! Aquí está tu resumen:",
   run_summary_save: "Guardar Actividad",
   run_summary_discard: "Descartar",
