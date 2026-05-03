@@ -501,5 +501,28 @@ export default {
   calendar_today_message: "Todavía no has corrido hoy, ¿a qué esperas?!",
   calendar_missed_title: "Fue duro... 😢",
   calendar_missed_message: "No pasa nada, todos tenemos días difíciles. ¡Lo importante es no rendirse!",
-  loading_ad: "Preparando tu contenido..."
+  loading_ad: "Preparando tu contenido...",
+
+  // Compartir carrera
+  share_modal_title: "Compartir carrera",
+  share_dialog_title: "Compartir carrera – Dri GoRun",
+  share_route_unavailable: "ruta no disponible",
+  share_km_label: "km",
+
+  // Seguimiento – overlays y alertas
+  tracking_finishing: "Finalizando carrera...",
+  tracking_bg_limited_title: "Seguimiento limitado",
+  tracking_bg_limited_msg: "No se pudo activar el seguimiento en segundo plano. Tu carrera se contará mientras la app esté abierta.",
+  tracking_notif_disabled_title: "Notificaciones desactivadas",
+  tracking_notif_disabled_msg: "Activa las notificaciones para recibir avisos durante la carrera.",
+  tracking_open_settings: "Abrir configuración",
+  tracking_continue_without_notif: "Continuar sin notificación",
+  tracking_bg_permission_title: "Ubicación en segundo plano",
+  tracking_bg_permission_msg: "Para rastrear con la pantalla apagada, ve a Configuración → DriRun → Ubicación y elige \"Permitir todo el tiempo\".\n\nPuedes empezar sin esto, pero el seguimiento solo funciona con la app abierta.",
+  tracking_start_anyway: "Iniciar de todas formas",
+
+  // Notificación activa
+  run_tracking_active_title: "🏃 Carrera en progreso",
+  run_tracking_paused_title: "⏸ Carrera pausada",
+  run_tracking_body: "Toca para abrir DriRun.",
 };

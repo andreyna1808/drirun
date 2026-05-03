@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
-  StyleSheet,
   ScrollView,
 } from "react-native";
 import Svg, {
@@ -21,89 +20,15 @@ import Svg, {
 import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
-import { RunRecord } from "@/interfaces/context";
+import { useTranslation } from "react-i18next";
+import { ShareRunModalProps } from "@/interfaces/share-run-modal";
+import { buildRoute, CARD_W, MAP_H, ORANGE, OG_LITE, BG_MAP, BG_STAT } from "@/utils/share-run";
+import { ShareRunModalStyles as styles } from "@/styles/share-run-modal.styles";
 import { formatDuration, formatPace } from "@/utils/tabs";
-import { haversineDistance } from "@/utils/tracking";
 import { useColors } from "@/hooks/use-colors";
 
-// ── Constantes visuais do card ─────────────────────────────────────────────
-const CARD_W = 300;
-const MAP_H = 290;
-const ORANGE = "#FF6B35";
-const OG_LITE = "#FBBF24";
-const BG_MAP = "#06061a";
-const BG_STAT = "#0d0d28";
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/** Reduz o número de pontos para manter a path SVG pequena. */
-function downsample(
-  route: Array<{ latitude: number; longitude: number }>,
-  max = 300
-): Array<{ latitude: number; longitude: number }> {
-  if (route.length <= max) return route;
-  const step = Math.ceil(route.length / max);
-  const out = route.filter((_, i) => i % step === 0);
-  if (out[out.length - 1] !== route[route.length - 1]) out.push(route[route.length - 1]);
-  return out;
-}
-
-/**
- * Normaliza as coordenadas GPS para o viewport do SVG, mantendo proporção.
- * Retorna a path SVG, o ponto inicial e marcadores de km.
- */
-function buildRoute(rawRoute: Array<{ latitude: number; longitude: number }>) {
-  const route = downsample(rawRoute);
-  const empty = { path: "", start: { x: CARD_W / 2, y: MAP_H / 2 }, kmMarkers: [] as { x: number; y: number; km: number }[] };
-  if (route.length < 2) return empty;
-
-  const lats = route.map(p => p.latitude);
-  const lngs = route.map(p => p.longitude);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-  const latR = maxLat - minLat || 0.0005;
-  const lngR = maxLng - minLng || 0.0005;
-
-  const PAD = 30;
-  const usableW = CARD_W - 2 * PAD;
-  const usableH = MAP_H - 2 * PAD;
-  const scale = Math.min(usableW / lngR, usableH / latR);
-  const ox = PAD + (usableW - lngR * scale) / 2;
-  const oy = PAD + (usableH - latR * scale) / 2;
-
-  const xy = (p: { latitude: number; longitude: number }) => ({
-    x: ox + (p.longitude - minLng) * scale,
-    y: oy + (maxLat - p.latitude) * scale, // Y invertido: lat sobe, tela desce
-  });
-
-  const pts = route.map(xy);
-  const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-
-  // Marca cada km completo ao longo da rota
-  const kmMarkers: { x: number; y: number; km: number }[] = [];
-  let cum = 0, nextKm = 1;
-  for (let i = 1; i < route.length; i++) {
-    cum += haversineDistance(
-      route[i - 1].latitude, route[i - 1].longitude,
-      route[i].latitude, route[i].longitude
-    );
-    if (cum >= nextKm * 1000) {
-      kmMarkers.push({ ...pts[i], km: nextKm++ });
-    }
-  }
-
-  return { path, start: pts[0], kmMarkers };
-}
-
-// ── Componente ─────────────────────────────────────────────────────────────
-
-interface Props {
-  run: RunRecord;
-  visible: boolean;
-  onClose: () => void;
-}
-
-export function ShareRunModal({ run, visible, onClose }: Props) {
+export function ShareRunModal({ run, visible, onClose }: ShareRunModalProps) {
+  const { t } = useTranslation();
   const colors = useColors();
   const cardRef = useRef<View>(null);
   const [sharing, setSharing] = useState(false);
@@ -125,11 +50,10 @@ export function ShareRunModal({ run, visible, onClose }: Props) {
         format: "png",
         quality: 1,
         result: "tmpfile",
-
       });
       await Sharing.shareAsync(uri, {
         mimeType: "image/png",
-        dialogTitle: "Compartilhar corrida – Dri GoRun",
+        dialogTitle: t("share_dialog_title"),
       });
     } catch (e) {
       console.error("[Share] Erro ao compartilhar:", e);
@@ -146,7 +70,9 @@ export function ShareRunModal({ run, visible, onClose }: Props) {
       {/* Bottom sheet */}
       <View style={[styles.sheet, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <View style={styles.handle} />
-        <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Compartilhar corrida</Text>
+        <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
+          {t("share_modal_title")}
+        </Text>
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -181,7 +107,7 @@ export function ShareRunModal({ run, visible, onClose }: Props) {
                   </>
                 ) : (
                   <SvgText x={CARD_W / 2} y={MAP_H / 2} fill="rgba(255,255,255,0.2)" fontSize={13} textAnchor="middle">
-                    rota não disponível
+                    {t("share_route_unavailable")}
                   </SvgText>
                 )}
 
@@ -200,17 +126,17 @@ export function ShareRunModal({ run, visible, onClose }: Props) {
                   </React.Fragment>
                 ))}
 
-                {/* Marca d'água: Dri GoRun (canto superior esquerdo) */}
+                {/* Marca d'água: Dri GoRun (nome do produto — não se traduz) */}
                 <SvgText x={16} y={30} fill="#fff" fontSize={15} fontWeight="700" opacity={0.95}>
-                  Dri GoRun?
+                  Dri GoRun
                 </SvgText>
 
                 {/* Distância total (canto superior direito) */}
-                <SvgText x={CARD_W - 16} y={28} fill={ORANGE} fontSize={26} fontWeight="700" textAnchor="end">
+                <SvgText x={CARD_W - 16} y={30} fill={ORANGE} fontSize={26} fontWeight="700" textAnchor="end">
                   {distKm}
                 </SvgText>
-                <SvgText x={CARD_W - 10} y={42} fill="rgba(255,255,255,0.38)" fontSize={11} textAnchor="end">
-                  km
+                <SvgText x={CARD_W - 18} y={44} fill="rgba(255,255,255,0.38)" fontSize={11} textAnchor="end">
+                  {t("share_km_label")}
                 </SvgText>
               </Svg>
 
@@ -218,27 +144,28 @@ export function ShareRunModal({ run, visible, onClose }: Props) {
               <View style={{ height: 0.5, backgroundColor: "rgba(255,255,255,0.07)" }} />
 
               {/* Faixa de estatísticas */}
-              <View style={{ backgroundColor: BG_STAT, paddingTop: 18, paddingBottom: 16 }}>
+              <View style={{ backgroundColor: BG_STAT, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 16 }}>
                 <View style={styles.statsRow}>
                   <View style={styles.statCol}>
                     <Text style={styles.statVal}>{timeStr}</Text>
-                    <Text style={styles.statLabel}>tempo</Text>
+                    <Text style={styles.statLabel}>{t("tracking_time")}</Text>
                   </View>
                   <View style={styles.statDivider} />
                   <View style={styles.statCol}>
                     <Text style={styles.statVal}>{paceStr}</Text>
-                    <Text style={styles.statLabel}>pace</Text>
+                    <Text style={styles.statLabel}>{t("tracking_pace")}</Text>
                   </View>
                   <View style={styles.statDivider} />
                   <View style={styles.statCol}>
                     <Text style={styles.statVal}>{run.calories}</Text>
-                    <Text style={styles.statLabel}>kcal</Text>
+                    <Text style={styles.statLabel}>{t("tracking_calories")}</Text>
                   </View>
                 </View>
 
                 <View style={styles.cardFooter}>
                   <Text style={styles.dateText}>{date}</Text>
-                  <Text style={styles.brandText}>DRI GORUN?</Text>
+                  {/* Nome do produto em caixa alta — não se traduz */}
+                  <Text style={styles.brandText}>DRI GORUN</Text>
                 </View>
               </View>
 
@@ -262,121 +189,8 @@ export function ShareRunModal({ run, visible, onClose }: Props) {
               <Text style={[styles.closeBtnText, { color: colors.muted }]}>Fechar</Text>
             </TouchableOpacity>
           </View>
-
         </ScrollView>
       </View>
     </Modal>
   );
 }
-
-// ── Estilos ────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
-  sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderTopWidth: 0.5,
-    paddingBottom: 40,
-    maxHeight: "88%",
-  },
-  handle: {
-    width: 40, height: 4,
-    backgroundColor: "rgba(128,128,128,0.35)",
-    borderRadius: 2,
-    alignSelf: "center",
-    marginTop: 10, marginBottom: 4,
-  },
-  sheetTitle: {
-    fontSize: 17, fontWeight: "600",
-    textAlign: "center",
-    paddingVertical: 12,
-  },
-  scroll: {
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    gap: 16,
-  },
-  cardWrapper: {
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-  },
-  statsRow: {
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-    width: "100%",
-  },
-  statCol: {
-    flex: 1,
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statDivider: {
-    width: 1,
-    height: 36,
-  },
-  statVal: {
-    color: "#ffffff",
-    fontSize: 20,
-    fontWeight: "600",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statLabel: {
-    color: "rgba(255,255,255,0.35)",
-    fontSize: 11,
-    marginTop: 2,
-    textTransform: "uppercase",
-  },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 12,
-    borderTopWidth: 0.5,
-    borderTopColor: "rgba(255,255,255,0.07)",
-    marginHorizontal: 8,
-  },
-  dateText: {
-    color: "rgba(255,255,255,0.2)",
-    fontSize: 11,
-  },
-  brandText: {
-    color: ORANGE,
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-  },
-  shareBtn: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  shareBtnText: {
-    color: "#ffffff",
-    fontSize: 16, fontWeight: "600",
-  },
-  closeBtn: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  closeBtnText: {
-    fontSize: 14,
-  },
-});

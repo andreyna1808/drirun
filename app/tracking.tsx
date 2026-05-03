@@ -157,18 +157,15 @@ export default function TrackingScreen() {
     // Não rolou — pergunta se quer abrir as Configurações ou seguir só foreground.
     return new Promise<boolean>((resolve) => {
       Alert.alert(
-        "Permissão de localização em segundo plano",
-        "Para o app continuar contando sua corrida com a tela apagada, vá em " +
-        "Configurações → DriRun → Localização e escolha \"Permitir o tempo todo\". " +
-        "Depois volte aqui e clique em Iniciar de novo.\n\n" +
-        "Você pode iniciar agora mesmo sem isso, mas a contagem só funciona com o app aberto.",
+        t("tracking_bg_permission_title"),
+        t("tracking_bg_permission_msg"),
         [
           {
-            text: "Iniciar mesmo assim",
+            text: t("tracking_start_anyway"),
             onPress: () => resolve(true),
           },
           {
-            text: "Abrir Configurações",
+            text: t("tracking_open_settings"),
             onPress: () => {
               resolve(false);
               Linking.openSettings().catch((e) =>
@@ -177,14 +174,14 @@ export default function TrackingScreen() {
             },
           },
           {
-            text: "Cancelar",
+            text: t("cancel"),
             style: "cancel",
             onPress: () => resolve(false),
           },
         ]
       );
     });
-  }, []);
+  }, [t]);
 
   // ── Para tudo ──────────────────────────────────────────────────────────────
   const stopAll = useCallback(async () => {
@@ -344,11 +341,11 @@ export default function TrackingScreen() {
     const { status: notifStatus } = await Notifications.requestPermissionsAsync();
     if (notifStatus !== "granted") {
       Alert.alert(
-        "Notificações desativadas",
-        "Ative as notificações para ver o cronômetro e a distância na barra de status durante a corrida.",
+        t("tracking_notif_disabled_title"),
+        t("tracking_notif_disabled_msg"),
         [
-          { text: "Abrir configurações", onPress: () => Linking.openSettings() },
-          { text: "Continuar sem notificação" },
+          { text: t("tracking_open_settings"), onPress: () => Linking.openSettings() },
+          { text: t("tracking_continue_without_notif") },
         ]
       );
     }
@@ -438,10 +435,8 @@ export default function TrackingScreen() {
     } catch (e) {
       console.warn("[Tracking] startBackgroundLocation falhou — seguindo só em foreground:", e);
       Alert.alert(
-        "Rastreamento limitado",
-        "Não consegui ativar o rastreamento em segundo plano agora. " +
-        "Sua corrida vai contar enquanto o app estiver aberto. " +
-        "Se você concedeu a permissão, tente parar e iniciar novamente."
+        t("tracking_bg_limited_title"),
+        t("tracking_bg_limited_msg")
       );
     }
   }, [hasPermission, t, ensureBackgroundPermission]);
@@ -586,7 +581,7 @@ export default function TrackingScreen() {
         }}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "600" }}>
-            Finalizando corrida...
+            {t("tracking_finishing")}
           </Text>
         </View>
       )}

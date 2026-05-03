@@ -209,7 +209,7 @@ export default function CalendarTrackScreen() {
                 setShowShare(true);
               }}
             >
-              <Text style={styles.homeButtonText}>Compartilhar</Text>
+              <Text style={styles.homeButtonText}>{t("celebration_share")}</Text>
             </TouchableOpacity>
 
             {/* ── Botão voltar ── */}

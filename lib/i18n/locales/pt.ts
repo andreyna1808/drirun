@@ -498,5 +498,28 @@ export default {
   calendar_today_message: "Você ainda não correu hoje, o que está esperando?!",
   calendar_missed_title: "Esse foi difícil... 😢",
   calendar_missed_message: "Tudo bem, todo mundo tem dias difíceis. O importante é não desistir!",
-  loading_ad: "Preparando seu conteúdo..."
+  loading_ad: "Preparando seu conteúdo...",
+
+  // Compartilhar corrida
+  share_modal_title: "Compartilhar corrida",
+  share_dialog_title: "Compartilhar corrida – Dri GoRun",
+  share_route_unavailable: "rota não disponível",
+  share_km_label: "km",
+
+  // Rastreamento – overlays e alertas
+  tracking_finishing: "Finalizando corrida...",
+  tracking_bg_limited_title: "Rastreamento limitado",
+  tracking_bg_limited_msg: "Não consegui ativar o rastreamento em segundo plano. Sua corrida vai contar enquanto o app estiver aberto.",
+  tracking_notif_disabled_title: "Notificações desativadas",
+  tracking_notif_disabled_msg: "Ative as notificações para ver avisos durante a corrida.",
+  tracking_open_settings: "Abrir configurações",
+  tracking_continue_without_notif: "Continuar sem notificação",
+  tracking_bg_permission_title: "Localização em segundo plano",
+  tracking_bg_permission_msg: "Para rastrear com a tela apagada, vá em Configurações → DriRun → Localização e escolha \"Permitir o tempo todo\".\n\nVocê pode iniciar sem isso, mas o rastreamento só funciona com o app aberto.",
+  tracking_start_anyway: "Iniciar mesmo assim",
+
+  // Notificação ativa
+  run_tracking_active_title: "🏃 Corrida em andamento",
+  run_tracking_paused_title: "⏸ Corrida pausada",
+  run_tracking_body: "Toque para abrir o DriRun.",
 };

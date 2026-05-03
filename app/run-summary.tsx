@@ -144,17 +144,17 @@ export default function RunSummaryScreen() {
                 }}
                 style={{
                   flexDirection: "row", alignItems: "center", gap: 4,
-                  backgroundColor: "#FF6B35" + "22", borderRadius: 20,
+                  backgroundColor: "#FF8C5A" + "22", borderRadius: 20,
                   paddingHorizontal: 10, paddingVertical: 6,
                 }}
               >
-                <Ionicons name="share-outline" size={16} color="#FF6B35" />
-                <Text style={{ color: "#FF6B35", fontSize: 13, fontWeight: "600" }}>Compartilhar</Text>
+                <Ionicons name="share-outline" size={16} color="#FF8C5A" />
+                <Text style={{ color: "#FF8C5A", fontSize: 13, fontWeight: "600" }}>{t("celebration_share")}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.metricsGrid}>
               <MetricItem label={t("metric_distance")} value={`${(run.distance / 1000).toFixed(2)} km`} emoji="📍" colors={colors} />
-              <MetricItem label={t("metric_pace")} value={`${formatPace(run.pace)} /km`} emoji="⚡" colors={colors} />
+              <MetricItem label={t("metric_pace")} value={`${formatPace(run.pace)} min/km`} emoji="⚡" colors={colors} />
               <MetricItem label={t("metric_duration")} value={formatDuration(run.duration)} emoji="⏱️" colors={colors} />
               <MetricItem label={t("metric_calories")} value={`${run.calories} kcal`} emoji="🔥" colors={colors} />
             </View>

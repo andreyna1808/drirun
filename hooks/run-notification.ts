@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import i18n from "@/lib/i18n";
 
 const NOTIFICATION_ID      = "run-active";
 const NOTIFICATION_CHANNEL = "run-tracking";
@@ -32,8 +33,8 @@ export async function showRunActiveNotification(isPaused = false) {
         await Notifications.scheduleNotificationAsync({
             identifier: NOTIFICATION_ID,
             content: {
-                title: isPaused ? "⏸ Corrida pausada" : "🏃 Corrida em andamento",
-                body: "Toque para abrir o DriRun.",
+                title: i18n.t(isPaused ? "run_tracking_paused_title" : "run_tracking_active_title"),
+                body: i18n.t("run_tracking_body"),
                 sound: false,
                 autoDismiss: false,
                 sticky: true,

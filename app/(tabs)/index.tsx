@@ -100,7 +100,7 @@ export default function LoggedHomeScreen() {
             <Text style={styles.sectionTitle}>{t("home_history_title")}</Text>
             <View style={styles.todayRunCard}>
               <RunMetricRow label={t("home_distance")} value={`${(todayRun.distance / 1000).toFixed(2)} km`} colors={colors} />
-              <RunMetricRow label={t("home_pace")} value={`${formatPace(todayRun.pace)} /km`} colors={colors} />
+              <RunMetricRow label={t("home_pace")} value={`${formatPace(todayRun.pace)} min/km`} colors={colors} />
               <RunMetricRow label={t("home_time")} value={formatDuration(todayRun.duration)} colors={colors} />
               <RunMetricRow label={t("home_calories")} value={`${todayRun.calories} kcal`} colors={colors} isLast />
             </View>
@@ -146,7 +146,7 @@ export default function LoggedHomeScreen() {
                     <Text style={styles.recentRunDistance}>{(run.distance / 1000).toFixed(2)} km</Text>
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
-                    <Text style={styles.recentRunPace}>{formatPace(run.pace)} /km</Text>
+                    <Text style={styles.recentRunPace}>{formatPace(run.pace)} min/km</Text>
                     <Text style={styles.recentRunTime}>{formatDuration(run.duration)}</Text>
                   </View>
                 </View>
