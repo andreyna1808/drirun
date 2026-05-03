@@ -11,7 +11,7 @@ export const formatPaceShort = (paceSecondsPerKm: number): string => {
     if (!paceSecondsPerKm || paceSecondsPerKm <= 0) return "--:--";
     const m = Math.floor(paceSecondsPerKm / 60);
     const s = Math.round(paceSecondsPerKm % 60);
-    return `${m}'${s.toString().padStart(2, "0")}s /km`;
+    return `${m}:${s.toString().padStart(2, "0")}min /km`;
 };
 
 export const formatDurationShort = (totalSeconds: number): string => {

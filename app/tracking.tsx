@@ -28,18 +28,10 @@ import {
   startBackgroundLocation,
   stopBackgroundLocation,
   setLocationUpdateCallback,
-  initRunTimer,
-  pauseRunTimer,
-  resumeRunTimer,
-  updateBgDistance,
-  getElapsedSeconds,
 } from "@/hooks/background-tracking";
 import {
-  showRunNotification,
-  dismissRunNotification,
-  ACTION_PAUSE,
-  ACTION_RESUME,
-  ACTION_FINISH,
+  showRunActiveNotification,
+  dismissRunActiveNotification,
 } from "@/hooks/run-notification";
 
 MapboxGL.setAccessToken(Constants.expoConfig?.extra?.MAPBOX_PUBLIC_TOKEN ?? "");
@@ -51,10 +43,9 @@ export default function TrackingScreen() {
   const { state, dispatch } = useApp();
   const colors = useColors();
   const cameraRef = useRef<MapboxGL.Camera>(null);
-
-  // ── Estado da corrida ──────────────────────────────────────────────────────
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [duration, setDuration] = useState(0);
   const [distance, setDistance] = useState(0);
   const [route, setRoute] = useState<Array<{ latitude: number; longitude: number }>>([]);
@@ -64,29 +55,30 @@ export default function TrackingScreen() {
 
   // Refs para evitar closures stale
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const notifIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFinishingRef = useRef(false);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const distanceRef = useRef(0);
   const durationRef = useRef(0);
   const routeRef = useRef<Array<{ latitude: number; longitude: number }>>([]);
   const isPausedRef = useRef(false);
   const isRunningRef = useRef(false);
+  const lastUiUpdateRef = useRef(0);
 
-  // ── Helper único pra mandar a notif com o estado atual ─────────────────────
-  // Usa getElapsedSeconds() (timestamp) em vez de durationRef pra ser preciso
-  // mesmo quando o setInterval foi suspenso pelo Android em background.
-  const pushNotif = useCallback(() => {
-    showRunNotification({
-      durationSeconds: getElapsedSeconds(),
-      distanceMeters: distanceRef.current,
-      isPaused: isPausedRef.current,
-    });
+  // ── Timer local ───────────────────────────────────────────────────────────
+  // Fica aqui no componente — o background-tracking não precisa mais saber de tempo.
+  const runStartTimeRef  = useRef(0);
+  const totalPausedMsRef = useRef(0);
+  const pauseStartRef    = useRef(0);
+
+  const getElapsedSeconds = useCallback((): number => {
+    if (runStartTimeRef.current === 0) return 0;
+    const pausedSoFar = isPausedRef.current
+      ? totalPausedMsRef.current + (Date.now() - pauseStartRef.current)
+      : totalPausedMsRef.current;
+    return Math.max(0, Math.floor((Date.now() - runStartTimeRef.current - pausedSoFar) / 1000));
   }, []);
 
   // ── Permissão de FOREGROUND no mount ───────────────────────────────────────
-  // Importante: não pedimos background aqui. Background no Android 11+ exige que o
-  // usuário vá em Configurações; pedir aqui causaria um warn imediato mesmo após
-  // ele autorizar. Pedimos sob demanda quando ele clica em Iniciar.
   useEffect(() => {
     (async () => {
       const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
@@ -120,22 +112,25 @@ export default function TrackingScreen() {
     return () => {
       stopAll();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Re-checagem de permissão ao voltar do background ──────────────────────
-  // Se a corrida está rodando e ficou sem bg permission, e o usuário foi às
-  // Configurações e voltou, tentamos religar o background tracking.
+  // ── Ressincronização ao voltar do background ──────────────────────────────
   useEffect(() => {
     const sub = AppState.addEventListener("change", async (nextState) => {
       if (nextState !== "active") return;
-      if (!isRunningRef.current || isPausedRef.current) return;
+      if (!isRunningRef.current) return;
 
-      // Pequena espera pro app *de fato* terminar de voltar pro foreground antes
-      // da gente tentar criar foreground service. Sem isso o Android pode rejeitar
-      // com "service cannot be started when the application is in the background".
+      if (!isPausedRef.current) {
+        const elapsed = getElapsedSeconds();
+        durationRef.current = elapsed;
+        setDuration(elapsed);
+      }
+      setDistance(distanceRef.current);
+
+      if (isPausedRef.current) return;
+
+      // Re-checa bg permission e reinicia o tracking se necessário
       await new Promise((r) => setTimeout(r, 400));
-
       const { status } = await Location.getBackgroundPermissionsAsync();
       if (status === "granted") {
         try {
@@ -150,13 +145,12 @@ export default function TrackingScreen() {
   }, []);
 
   // ── Garantir permissão de background antes do start ───────────────────────
-  // Retorna true se pode iniciar (com ou sem bg). Só BLOQUEIA se foreground falhar.
   const ensureBackgroundPermission = useCallback(async (): Promise<boolean> => {
     // Já temos bg granted? beleza
     const current = await Location.getBackgroundPermissionsAsync();
     if (current.status === "granted") return true;
 
-    // Tenta pedir — no Android 11+ isso só redireciona pra Configurações.
+    // Tenta pedir — no Android 11+ redireciona pra Configurações.
     const requested = await Location.requestBackgroundPermissionsAsync();
     if (requested.status === "granted") return true;
 
@@ -176,10 +170,6 @@ export default function TrackingScreen() {
           {
             text: "Abrir Configurações",
             onPress: () => {
-              // IMPORTANTE: resolve(false) ANTES do openSettings.
-              // Se a gente resolvesse true depois do openSettings, o app já estaria
-              // em background e startBackgroundLocation falharia com:
-              // "Foreground service cannot be started when the application is in the background"
               resolve(false);
               Linking.openSettings().catch((e) =>
                 console.warn("[Tracking] openSettings falhou:", e)
@@ -199,14 +189,12 @@ export default function TrackingScreen() {
   // ── Para tudo ──────────────────────────────────────────────────────────────
   const stopAll = useCallback(async () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    if (notifIntervalRef.current) clearInterval(notifIntervalRef.current);
     timerRef.current = null;
-    notifIntervalRef.current = null;
     isRunningRef.current = false;
     isPausedRef.current = false;
     setLocationUpdateCallback(null);
     await stopBackgroundLocation();
-    await dismissRunNotification();
+    dismissRunActiveNotification();
   }, []);
 
   // ── Pausar/Retomar ─────────────────────────────────────────────────────────
@@ -216,44 +204,52 @@ export default function TrackingScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
     if (isPausedRef.current) {
-      // Retomar
-      resumeRunTimer();
+      totalPausedMsRef.current += Date.now() - pauseStartRef.current;
+      pauseStartRef.current = 0;
       isPausedRef.current = false;
       setIsPaused(false);
+      showRunActiveNotification(false);
+      // Timer de UI — 100ms para não pular segundos
       timerRef.current = setInterval(() => {
         if (isPausedRef.current) return;
         const elapsed = getElapsedSeconds();
-        durationRef.current = elapsed;
-        setDuration(elapsed);
-        pushNotif();
-      }, 1000);
+        if (elapsed !== durationRef.current) {
+          durationRef.current = elapsed;
+          setDuration(elapsed);
+        }
+      }, 100);
     } else {
-      // Pausar
-      pauseRunTimer();
+      // Pausar — marca o instante de início da pausa
+      pauseStartRef.current = Date.now();
       isPausedRef.current = true;
       setIsPaused(true);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      showRunActiveNotification(true);
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     }
-    // Atualiza imediatamente pra trocar título e botões
-    pushNotif();
-  }, [pushNotif]);
+  }, [getElapsedSeconds]);
 
   // ── Finalizar corrida ──────────────────────────────────────────────────────
-  const confirmFinish = useCallback(async () => {
-    await stopAll();
+  const confirmFinish = useCallback(() => {
+    if (isFinishingRef.current) return;
+    isFinishingRef.current = true;
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-
+    // 1. Captura dados ANTES de parar qualquer coisa
     const finalDuration = getElapsedSeconds();
     const finalDistance = distanceRef.current;
     const finalRoute = routeRef.current;
 
+    // 2. Para os timers locais imediatamente (síncrono, sem await)
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    isRunningRef.current = false;
+    setLocationUpdateCallback(null);
+
+    // 3. Mostra overlay + haptic — usuário vê feedback visual imediato
+    setIsFinishing(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+
+    // 4. Salva o registro
     const paceSecondsPerKm =
       finalDistance > 0 ? finalDuration / (finalDistance / 1000) : 0;
-
     const weightKg = state.profile?.weight ?? 70;
     const calories = estimateCalories(weightKg, finalDuration);
 
@@ -268,8 +264,16 @@ export default function TrackingScreen() {
     };
 
     dispatch({ type: "ADD_RUN", payload: runRecord });
-    router.replace(`/run-summary?runId=${runRecord.id}` as any);
-  }, [stopAll, state.profile, dispatch]);
+
+    // 5. Breve delay pra overlay aparecer, depois navega
+    setTimeout(() => {
+      router.replace(`/run-summary?runId=${runRecord.id}` as any);
+    }, 600);
+
+    // 6. Cleanup do GPS e notificação em background
+    stopBackgroundLocation().catch(console.warn);
+    dismissRunActiveNotification().catch(console.warn);
+  }, [state.profile, dispatch]);
 
   const cancelRun = useCallback(async () => {
     await stopAll();
@@ -308,6 +312,20 @@ export default function TrackingScreen() {
       return;
     }
 
+    // Pede permissão de notificação — necessária para a sobreposição da corrida aparecer.
+    // Fazemos aqui (não no boot) para o usuário entender o contexto do pedido.
+    const { status: notifStatus } = await Notifications.requestPermissionsAsync();
+    if (notifStatus !== "granted") {
+      Alert.alert(
+        "Notificações desativadas",
+        "Ative as notificações para ver o cronômetro e a distância na barra de status durante a corrida.",
+        [
+          { text: "Abrir configurações", onPress: () => Linking.openSettings() },
+          { text: "Continuar sem notificação" },
+        ]
+      );
+    }
+
     // Pergunta sobre bg aqui (e não no mount) — assim quem volta das Configurações
     // já entra com permissão fresh.
     const canStart = await ensureBackgroundPermission();
@@ -321,38 +339,37 @@ export default function TrackingScreen() {
     setRoute([]);
     isRunningRef.current = true;
     isPausedRef.current = false;
+    isFinishingRef.current = false;
     distanceRef.current = 0;
     durationRef.current = 0;
     routeRef.current = [];
     lastLocationRef.current = null;
 
-    // Inicia o timer baseado em timestamp — funciona mesmo com app em background.
-    initRunTimer();
+    // Inicia o timer local baseado em timestamp.
+    runStartTimeRef.current  = Date.now();
+    totalPausedMsRef.current = 0;
+    pauseStartRef.current    = 0;
 
-    // Mostra a notif imediatamente (0 km · 00:00) — o usuário já vê na barra.
-    await showRunNotification({
-      durationSeconds: 0,
-      distanceMeters: 0,
-      isPaused: false,
-    });
+    // Notificação estática — aparece imediatamente e fica até o fim da corrida.
+    showRunActiveNotification(false);
 
-    // Timer do cronômetro — só atualiza a UI. O tempo é calculado via timestamp,
-    // então mesmo que o Android suspenda este interval em background, ao voltar
-    // ao foreground o valor estará correto.
+    // Timer de UI — roda a cada 100ms mas só atualiza o display quando o segundo
+    // efetivamente muda. Isso resolve o problema de o setInterval de 1000ms pular
+    // segundos quando o JS thread está ocupado renderizando o mapa.
     timerRef.current = setInterval(() => {
       if (isPausedRef.current) return;
       const elapsed = getElapsedSeconds();
-      durationRef.current = elapsed;
-      setDuration(elapsed);
-      pushNotif();
-    }, 1000);
+      if (elapsed !== durationRef.current) {
+        durationRef.current = elapsed;
+        setDuration(elapsed);
+      }
+    }, 100);
 
     // Callback que recebe localização do background task
     setLocationUpdateCallback((coords: any) => {
       if (isPausedRef.current) return; // ignora updates enquanto pausado
 
-      setCurrentLocation(coords);
-
+      // ── Distância: sempre calculada por ponto (precisão máxima) ────────────
       if (lastLocationRef.current) {
         const delta = haversineDistance(
           lastLocationRef.current.latitude,
@@ -362,23 +379,28 @@ export default function TrackingScreen() {
         );
         if (delta < 50) {
           distanceRef.current += delta;
-          updateBgDistance(distanceRef.current); // sincroniza com a bg task
-          setDistance(distanceRef.current);
         }
       }
-
       lastLocationRef.current = coords;
-      routeRef.current = [...routeRef.current, coords];
-      setRoute([...routeRef.current]);
+      routeRef.current.push(coords); // O(1) — sem copiar o array inteiro a cada ponto
 
-      cameraRef.current?.setCamera({
-        centerCoordinate: [coords.longitude, coords.latitude],
-        zoomLevel: 16,
-        animationDuration: 500,
-      });
-
-      // Atualiza a notif assim que entra um novo ponto — pra distância subir vivo.
-      pushNotif();
+      // ── UI (mapa, rota, câmera): throttled a 2s ────────────────────────────
+      // Renderizar a linha do Mapbox a cada GPS update (~1s) bloqueia o JS thread
+      // e impede o setInterval de 100ms de disparar na hora certa, causando o
+      // "pulo" de segundos no cronômetro. Com 2s o mapa ainda parece fluido mas
+      // o timer pode respirar entre os renders.
+      const now = Date.now();
+      if (now - lastUiUpdateRef.current > 2000) {
+        lastUiUpdateRef.current = now;
+        setCurrentLocation(coords);
+        setDistance(distanceRef.current);
+        setRoute([...routeRef.current]);
+        cameraRef.current?.setCamera({
+          centerCoordinate: [coords.longitude, coords.latitude],
+          zoomLevel: 16,
+          animationDuration: 500,
+        });
+      }
     });
 
     // Inicia task de background. Se falhar (ex: app entrou em background, permissão
@@ -395,32 +417,16 @@ export default function TrackingScreen() {
         "Se você concedeu a permissão, tente parar e iniciar novamente."
       );
     }
-  }, [hasPermission, t, pushNotif, ensureBackgroundPermission]);
-
-  // ── Listener dos botões da notificação ─────────────────────────────────────
-  useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const action = response.actionIdentifier;
-      switch (action) {
-        case ACTION_PAUSE:
-        case ACTION_RESUME:
-          togglePause();
-          break;
-        case ACTION_FINISH:
-          finishRun();
-          break;
-        default:
-          break;
-      }
-    });
-    return () => sub.remove();
-  }, [togglePause, finishRun]);
+  }, [hasPermission, t, ensureBackgroundPermission]);
 
   // ── Métricas calculadas ────────────────────────────────────────────────────
   const currentPace = distance > 0 ? duration / (distance / 1000) : 0;
   const formattedPace = formatPace(currentPace);
   const formattedDuration = formatDuration(duration);
-  const formattedDistance = (distance / 1000).toFixed(2);
+  // Mostra metros quando < 1 km (ex: "350 m"), km quando >= 1 km (ex: "1.23 km")
+  const formattedDistance = distance < 1000
+    ? `${Math.round(distance)} m`
+    : `${(distance / 1000).toFixed(2)} km`;
 
   const routeGeoJSON: GeoJSON.Feature<GeoJSON.LineString> = {
     type: "Feature",
@@ -541,6 +547,20 @@ export default function TrackingScreen() {
             size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
             requestOptions={{ requestNonPersonalizedAdsOnly: true }}
           />
+        </View>
+      )}
+
+      {/* Overlay de finalização */}
+      {isFinishing && (
+        <View style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: colors.background + "EE",
+          justifyContent: "center", alignItems: "center", gap: 16,
+        }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "600" }}>
+            Finalizando corrida...
+          </Text>
         </View>
       )}
     </View>

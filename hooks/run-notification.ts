@@ -1,112 +1,55 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 
-const NOTIFICATION_ID = "run-active";
+const NOTIFICATION_ID      = "run-active";
+const NOTIFICATION_CHANNEL = "run-tracking";
 
-// Categorias = grupos de botões de ação que aparecem na notificação.
-// O Android/iOS usam o categoryIdentifier pra saber quais botões mostrar.
-export const CATEGORY_RUNNING = "drirun-running";
-export const CATEGORY_PAUSED = "drirun-paused";
-
-// IDs das ações — o tracking.tsx escuta esses pra reagir aos cliques.
-export const ACTION_PAUSE = "PAUSE";
-export const ACTION_RESUME = "RESUME";
-export const ACTION_FINISH = "FINISH";
-
-let categoriesRegistered = false;
-
-async function ensureCategories() {
-    if (categoriesRegistered || Platform.OS === "web") return;
-
-    try {
-        await Notifications.setNotificationCategoryAsync(CATEGORY_RUNNING, [
-            {
-                identifier: ACTION_PAUSE,
-                buttonTitle: "⏸ Pausar",
-                options: { opensAppToForeground: false },
-            },
-            {
-                identifier: ACTION_FINISH,
-                buttonTitle: "🏁 Finalizar",
-                options: { opensAppToForeground: true },
-            },
-        ]);
-
-        await Notifications.setNotificationCategoryAsync(CATEGORY_PAUSED, [
-            {
-                identifier: ACTION_RESUME,
-                buttonTitle: "▶ Continuar",
-                options: { opensAppToForeground: false },
-            },
-            {
-                identifier: ACTION_FINISH,
-                buttonTitle: "🏁 Finalizar",
-                options: { opensAppToForeground: true },
-            },
-        ]);
-
-        categoriesRegistered = true;
-    } catch (e) {
-        console.warn("[Notif] Falha ao registrar categorias:", e);
-    }
+/**
+ * Garante que o canal Android de baixa importância existe.
+ * LOW = sem som, sem banner pop-up, mas aparece na gaveta e na tela de bloqueio.
+ */
+async function ensureChannel() {
+    if (Platform.OS !== "android") return;
+    await Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNEL, {
+        name: "Corrida ativa",
+        importance: Notifications.AndroidImportance.LOW,
+        sound: null,
+        vibrationPattern: undefined,
+        enableVibrate: false,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    }).catch((e) => console.warn("[Notif] canal run-tracking falhou:", e));
 }
 
-export interface RunNotificationPayload {
-    durationSeconds: number;
-    distanceMeters: number;
-    isPaused: boolean;
-}
-
-function formatDuration(totalSeconds: number) {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, "0");
-    const s = (totalSeconds % 60).toString().padStart(2, "0");
-    return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
-}
-
-export async function showRunNotification(payload: RunNotificationPayload) {
+/**
+ * Mostra (ou mantém visível) a notificação estática de corrida em andamento.
+ * Não atualiza conteúdo dinamicamente — só avisa que a corrida está ativa.
+ * Chame uma vez ao iniciar e novamente ao pausar/retomar para trocar o título.
+ */
+export async function showRunActiveNotification(isPaused = false) {
     if (Platform.OS === "web") return;
-
-    await ensureCategories();
-
-    const time = formatDuration(payload.durationSeconds);
-    const km = (payload.distanceMeters / 1000).toFixed(2);
-
-    const title = payload.isPaused
-        ? "⏸ DriRun — Pausado"
-        : "🏃 DriRun — Corrida ativa";
-    const body = `${km} km · ${time}`;
-
+    await ensureChannel();
     try {
         await Notifications.scheduleNotificationAsync({
             identifier: NOTIFICATION_ID,
             content: {
-                title,
-                body,
-                // Sticky só faz sentido enquanto está rodando — quando pausa, deixa o usuário
-                // poder limpar se quiser.
-                sticky: !payload.isPaused,
-                autoDismiss: false,
-                // Sem som a cada update — senão buzina o tempo todo.
+                title: isPaused ? "⏸ Corrida pausada" : "🏃 Corrida em andamento",
+                body: "Toque para abrir o DriRun.",
                 sound: false,
-                categoryIdentifier: payload.isPaused ? CATEGORY_PAUSED : CATEGORY_RUNNING,
-                // Mantém a notificação como "ongoing" no Android — não pode ser dispensada
-                // arrastando. Combina com sticky.
-                priority: Notifications.AndroidNotificationPriority?.HIGH,
-            },
-            trigger: null, // dispara imediatamente
+                autoDismiss: false,
+                sticky: true,
+                ...(Platform.OS === "android" ? { channelId: NOTIFICATION_CHANNEL } : {}),
+            } as Notifications.NotificationContentInput,
+            trigger: null,
         });
     } catch (e) {
-        console.warn("[Notif] Falha ao agendar notificação:", e);
+        console.warn("[Notif] Falha ao mostrar notificação de corrida:", e);
     }
 }
 
-export async function dismissRunNotification() {
+/** Remove a notificação de corrida ativa. */
+export async function dismissRunActiveNotification() {
     if (Platform.OS === "web") return;
-
     try {
         await Notifications.dismissNotificationAsync(NOTIFICATION_ID);
-    } catch (e) {
-        // Se a notificação não foi apresentada, dismiss falha silenciosamente — ignoramos.
-    }
+    } catch (_) { /* silencioso */ }
 }
