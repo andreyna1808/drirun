@@ -22,7 +22,7 @@ import { TrackingStyles } from "@/styles/tracking.styles";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 import { formatDuration, formatPace } from "@/utils/tabs";
-import { haversineDistance, estimateCalories } from "@/utils/tracking";
+import { haversineDistance, estimateCalories, getLocalDateString } from "@/utils/tracking";
 import { RunRecord } from "@/interfaces/context";
 import {
   startBackgroundLocation,
@@ -252,7 +252,7 @@ export default function TrackingScreen() {
 
     const runRecord: RunRecord = {
       id: Date.now().toString(),
-      date: new Date().toISOString().split("T")[0],
+      date: getLocalDateString(),
       duration: finalDuration,
       distance: finalDistance,
       pace: paceSecondsPerKm,
@@ -305,7 +305,7 @@ export default function TrackingScreen() {
       }, 100);
     };
 
-    if (distanceRef.current < 10) {
+    if (distanceRef.current < 100) {
       Alert.alert(
         t("tracking_short_run_title"),
         t("tracking_short_run_message"),

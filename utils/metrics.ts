@@ -1,6 +1,7 @@
 import { RunRecord } from "@/interfaces/context";
 import { FilterPeriod, IChartDataPoint } from "@/interfaces/metrics";
 import { Dimensions } from "react-native";
+import { getLocalDateString } from "@/utils/tracking";
 
 const { width } = Dimensions.get("window");
 export const CHART_WIDTH = width - 48;
@@ -35,7 +36,7 @@ export const getLastNDays = (n: number): string[] => {
     for (let i = n - 1; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        days.push(d.toISOString().split("T")[0]);
+        days.push(getLocalDateString(d));
     }
     return days;
 }
@@ -109,7 +110,7 @@ export const aggregateRuns = (
     for (let m = 5; m >= 0; m--) {
         const d = new Date();
         d.setMonth(d.getMonth() - m);
-        const monthStr = d.toISOString().substring(0, 7);
+        const monthStr = getLocalDateString(d).substring(0, 7);
         const monthRuns = runs.filter((r) => r.date.startsWith(monthStr));
         let value = 0;
         if (monthRuns.length > 0) {

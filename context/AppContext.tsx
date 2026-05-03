@@ -9,6 +9,7 @@ import React, {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppState, NotificationSettings, PetData, RunRecord, UserProfile } from "@/interfaces/context";
 import { DEFAULT_PET, INITIAL_STATE } from "@/utils/context";
+import { getLocalDateString } from "@/utils/tracking";
 
 type Action =
   | { type: "LOAD_STATE"; payload: AppState }
@@ -99,7 +100,7 @@ function appReducer(state: AppState, action: Action): AppState {
         isOnboarded: true,
         profile: action.payload.profile,
         goalDays: action.payload.goalDays,
-        goalStartDate: new Date().toISOString().split("T")[0],
+        goalStartDate: getLocalDateString(),
         notifications: {
           enabled: action.payload.notificationsEnabled,
           hour: action.payload.notificationHour,
@@ -205,12 +206,12 @@ export function calculatePetState(pet: PetData, goalDays: number): PetData {
 }
 
 export function hasRunToday(runs: RunRecord[]): boolean {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   return runs.some((r) => r.date === today);
 }
 
 export function getTodayRun(runs: RunRecord[]): RunRecord | null {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   return runs.find((r) => r.date === today) ?? null;
 }
 
