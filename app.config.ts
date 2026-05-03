@@ -2,7 +2,7 @@ import 'dotenv/config';
 import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
-  name: "Dri GoRun?!",
+  name: "Dri GoRun",
   slug: "drirun",
   version: "1.0.0",
   orientation: "portrait",
