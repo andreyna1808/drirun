@@ -33,6 +33,7 @@ const config: ExpoConfig = {
       "ACCESS_BACKGROUND_LOCATION",
       "FOREGROUND_SERVICE",
       "FOREGROUND_SERVICE_LOCATION",
+      "RECEIVE_BOOT_COMPLETED",
     ],
 
     // config: {
@@ -82,7 +83,7 @@ const config: ExpoConfig = {
         // Configuração do canal Android — sem isso, scheduleNotificationAsync pode falhar
         // ou a notificação não aparece. Substitua os caminhos pelos seus assets se quiser.
         icon: "./assets/images/logo.png",
-        color: "#3B82F6",
+        color: "#04112d",
       },
     ],
   ],

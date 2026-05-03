@@ -22,8 +22,9 @@ export default function HomeScreen() {
 
         try {
             Notifications.setNotificationHandler({
+                // shouldShowAlert foi descontinuado em favor de banner/list — usar
+                // ambos cobre todas as plataformas e remove o warn do console.
                 handleNotification: async () => ({
-                    shouldShowAlert: true,
                     shouldShowBanner: true,
                     shouldShowList: true,
                     shouldPlaySound: true,

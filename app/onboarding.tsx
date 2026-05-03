@@ -206,12 +206,55 @@ export default function OnboardingScreen() {
   }
   function handleDenyNotifications() { setNotificationsEnabled(false); }
 
-  const handleFinish = useCallback(async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const profile = { name: name.trim(), age: parseInt(age), weight: parseFloat(weightKg), height: parseFloat(heightCm), sex: sex as "male" | "female" };
-    if (notificationsEnabled) await scheduleNotification(state?.pet?.name || "Seu Pet", profile.name, selectedTime);
-    dispatch({ type: "COMPLETE_ONBOARDING", payload: { profile, goalDays: parseInt(goalDays), notificationsEnabled: notificationsEnabled ?? false, notificationHour: notificationsEnabled ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}` : null } });
-  }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch]);
+  const handleFinish = useCallback(() => {
+    // Validação síncrona — pega o caso do botão de rodapé que pula goToNext.
+    const ageNum = parseInt(age);
+    const heightNum = parseFloat(heightCm);
+    const weightNum = parseFloat(weightKg);
+    if (
+      !name.trim() ||
+      !Number.isFinite(ageNum) || ageNum < 1 ||
+      !Number.isFinite(heightNum) || heightNum < 1 ||
+      !Number.isFinite(weightNum) || weightNum < 1 ||
+      (sex !== "male" && sex !== "female")
+    ) {
+      Alert.alert(t("error"), t("error_profile_incomplete") || "Preencha seus dados antes de aceitar o desafio.");
+      setStep(1);
+      return;
+    }
+
+    const profile = {
+      name: name.trim(),
+      age: ageNum,
+      weight: weightNum,
+      height: heightNum,
+      sex: sex as "male" | "female",
+    };
+
+    // Haptic é fire-and-forget — não trava a UI.
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
+
+    // DISPATCH PRIMEIRO — navegação imediata pra /(tabs).
+    dispatch({
+      type: "COMPLETE_ONBOARDING",
+      payload: {
+        profile,
+        goalDays: parseInt(goalDays),
+        notificationsEnabled: notificationsEnabled ?? false,
+        notificationHour: notificationsEnabled
+          ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}`
+          : null,
+      },
+    });
+
+    // SÓ DEPOIS agenda a notif diária — fire-and-forget. Se falhar, o usuário não percebe
+    // diferença visual, e a corrida do dia seguinte simplesmente não toca alarme.
+    if (notificationsEnabled) {
+      scheduleNotification(state?.pet?.name || "Seu Pet", profile.name, selectedTime).catch(
+        (e) => console.warn("[Onboarding] Falha ao agendar notif:", e)
+      );
+    }
+  }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch, t, state?.pet?.name]);
 
   const styles = OnboardingStyles(colors);
 

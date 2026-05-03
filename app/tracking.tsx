@@ -28,6 +28,11 @@ import {
   startBackgroundLocation,
   stopBackgroundLocation,
   setLocationUpdateCallback,
+  initRunTimer,
+  pauseRunTimer,
+  resumeRunTimer,
+  updateBgDistance,
+  getElapsedSeconds,
 } from "@/hooks/background-tracking";
 import {
   showRunNotification,
@@ -68,9 +73,11 @@ export default function TrackingScreen() {
   const isRunningRef = useRef(false);
 
   // ── Helper único pra mandar a notif com o estado atual ─────────────────────
+  // Usa getElapsedSeconds() (timestamp) em vez de durationRef pra ser preciso
+  // mesmo quando o setInterval foi suspenso pelo Android em background.
   const pushNotif = useCallback(() => {
     showRunNotification({
-      durationSeconds: durationRef.current,
+      durationSeconds: getElapsedSeconds(),
       distanceMeters: distanceRef.current,
       isPaused: isPausedRef.current,
     });
@@ -124,9 +131,13 @@ export default function TrackingScreen() {
       if (nextState !== "active") return;
       if (!isRunningRef.current || isPausedRef.current) return;
 
+      // Pequena espera pro app *de fato* terminar de voltar pro foreground antes
+      // da gente tentar criar foreground service. Sem isso o Android pode rejeitar
+      // com "service cannot be started when the application is in the background".
+      await new Promise((r) => setTimeout(r, 400));
+
       const { status } = await Location.getBackgroundPermissionsAsync();
       if (status === "granted") {
-        // Já estava rodando? Reinicia o background com a permissão nova.
         try {
           await stopBackgroundLocation();
           await startBackgroundLocation();
@@ -155,6 +166,7 @@ export default function TrackingScreen() {
         "Permissão de localização em segundo plano",
         "Para o app continuar contando sua corrida com a tela apagada, vá em " +
         "Configurações → DriRun → Localização e escolha \"Permitir o tempo todo\". " +
+        "Depois volte aqui e clique em Iniciar de novo.\n\n" +
         "Você pode iniciar agora mesmo sem isso, mas a contagem só funciona com o app aberto.",
         [
           {
@@ -163,9 +175,15 @@ export default function TrackingScreen() {
           },
           {
             text: "Abrir Configurações",
-            onPress: async () => {
-              await Linking.openSettings();
-              resolve(true); // Volta no AppState listener pra rechecar
+            onPress: () => {
+              // IMPORTANTE: resolve(false) ANTES do openSettings.
+              // Se a gente resolvesse true depois do openSettings, o app já estaria
+              // em background e startBackgroundLocation falharia com:
+              // "Foreground service cannot be started when the application is in the background"
+              resolve(false);
+              Linking.openSettings().catch((e) =>
+                console.warn("[Tracking] openSettings falhou:", e)
+              );
             },
           },
           {
@@ -199,16 +217,19 @@ export default function TrackingScreen() {
 
     if (isPausedRef.current) {
       // Retomar
+      resumeRunTimer();
       isPausedRef.current = false;
       setIsPaused(false);
       timerRef.current = setInterval(() => {
-        durationRef.current += 1;
-        setDuration((d) => d + 1);
-        // Atualiza a notif a cada tick — assim o tempo aparece vivo na barra.
+        if (isPausedRef.current) return;
+        const elapsed = getElapsedSeconds();
+        durationRef.current = elapsed;
+        setDuration(elapsed);
         pushNotif();
       }, 1000);
     } else {
       // Pausar
+      pauseRunTimer();
       isPausedRef.current = true;
       setIsPaused(true);
       if (timerRef.current) {
@@ -226,7 +247,7 @@ export default function TrackingScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
-    const finalDuration = durationRef.current;
+    const finalDuration = getElapsedSeconds();
     const finalDistance = distanceRef.current;
     const finalRoute = routeRef.current;
 
@@ -256,7 +277,7 @@ export default function TrackingScreen() {
   }, [stopAll]);
 
   const finishRun = useCallback(() => {
-    if (distanceRef.current < 100) {
+    if (distanceRef.current < 10) {
       Alert.alert(
         t("tracking_short_run_title"),
         t("tracking_short_run_message"),
@@ -305,6 +326,9 @@ export default function TrackingScreen() {
     routeRef.current = [];
     lastLocationRef.current = null;
 
+    // Inicia o timer baseado em timestamp — funciona mesmo com app em background.
+    initRunTimer();
+
     // Mostra a notif imediatamente (0 km · 00:00) — o usuário já vê na barra.
     await showRunNotification({
       durationSeconds: 0,
@@ -312,11 +336,14 @@ export default function TrackingScreen() {
       isPaused: false,
     });
 
-    // Timer do cronômetro — atualiza a notif a cada segundo.
+    // Timer do cronômetro — só atualiza a UI. O tempo é calculado via timestamp,
+    // então mesmo que o Android suspenda este interval em background, ao voltar
+    // ao foreground o valor estará correto.
     timerRef.current = setInterval(() => {
       if (isPausedRef.current) return;
-      durationRef.current += 1;
-      setDuration((d) => d + 1);
+      const elapsed = getElapsedSeconds();
+      durationRef.current = elapsed;
+      setDuration(elapsed);
       pushNotif();
     }, 1000);
 
@@ -335,6 +362,7 @@ export default function TrackingScreen() {
         );
         if (delta < 50) {
           distanceRef.current += delta;
+          updateBgDistance(distanceRef.current); // sincroniza com a bg task
           setDistance(distanceRef.current);
         }
       }
@@ -353,8 +381,20 @@ export default function TrackingScreen() {
       pushNotif();
     });
 
-    // Inicia task de background (substitui watchPositionAsync)
-    await startBackgroundLocation();
+    // Inicia task de background. Se falhar (ex: app entrou em background, permissão
+    // revogada no meio do caminho, etc), a gente NÃO derruba a corrida — só loga.
+    // O timer + a UI continuam funcionando enquanto o app estiver em foreground.
+    try {
+      await startBackgroundLocation();
+    } catch (e) {
+      console.warn("[Tracking] startBackgroundLocation falhou — seguindo só em foreground:", e);
+      Alert.alert(
+        "Rastreamento limitado",
+        "Não consegui ativar o rastreamento em segundo plano agora. " +
+        "Sua corrida vai contar enquanto o app estiver aberto. " +
+        "Se você concedeu a permissão, tente parar e iniciar novamente."
+      );
+    }
   }, [hasPermission, t, pushNotif, ensureBackgroundPermission]);
 
   // ── Listener dos botões da notificação ─────────────────────────────────────
