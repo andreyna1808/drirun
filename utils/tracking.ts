@@ -1,5 +1,17 @@
 export const MET_RUNNING = 8.0;
 
+/**
+ * Retorna a data no formato YYYY-MM-DD usando o fuso horário LOCAL do dispositivo.
+ * Evita o bug de `toISOString()` que retorna UTC — em fusos negativos (ex: Brasil UTC-3),
+ * correr às 22h local salva a data do dia SEGUINTE em UTC.
+ */
+export function getLocalDateString(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export const haversineDistance =(
   lat1: number, lon1: number,
    lat2: number, lon2: number

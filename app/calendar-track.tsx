@@ -19,6 +19,7 @@ import { MetricItem } from "@/components/metric-item";
 import { MapView } from "@/components/map-view";
 import { RunSummaryStyles } from "@/styles/run-summary.styles";
 import { useRewardedAd } from "@/hooks/use-ads";
+import { ShareRunModal } from "@/components/share-run-modal";
 
 MapboxGL.setAccessToken(Constants.expoConfig?.extra?.MAPBOX_PUBLIC_TOKEN ?? "");
 
@@ -30,6 +31,7 @@ export default function CalendarTrackScreen() {
   const styles = RunSummaryStyles(colors);
 
   const [adDone, setAdDone] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const metricsSlide = useRef(new Animated.Value(60)).current;
   const metricsOpacity = useRef(new Animated.Value(0)).current;
@@ -39,7 +41,6 @@ export default function CalendarTrackScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   });
 
-  // Assim que entrar na tela, tenta exibir o anúncio
   useEffect(() => {
     if (adLoaded) {
       showAd();
@@ -129,7 +130,7 @@ export default function CalendarTrackScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
-        <View style={[styles.celebrationHeader, { backgroundColor: colors.primary }]}>
+        <View style={[styles.celebrationHeader]}>
           <Text style={styles.celebrationTitle}>
             🗓️ {t("calendar_track_title", { day: dayNumber })}
           </Text>
@@ -163,9 +164,11 @@ export default function CalendarTrackScreen() {
             backgroundColor: colors.surface,
             borderColor: colors.border,
           }]}>
-            <Text style={[styles.metricsTitle, { color: colors.foreground }]}>
-              📊 {t("run_summary_title")}
-            </Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <Text style={[styles.metricsTitle, { color: colors.foreground, marginBottom: 0 }]}>
+                📊 {t("run_summary_title")}
+              </Text>
+            </View>
             <View style={styles.metricsGrid}>
               <MetricItem
                 label={t("metric_distance")}
@@ -175,7 +178,7 @@ export default function CalendarTrackScreen() {
               />
               <MetricItem
                 label={t("metric_pace")}
-                value={`${formatPace(run.pace)} /km`}
+                value={`${formatPace(run.pace)}`}
                 emoji="⚡"
                 colors={colors}
               />
@@ -197,20 +200,43 @@ export default function CalendarTrackScreen() {
           {/* ── Mapa ── */}
           <MapView todayRun={run} type="home" />
 
-          {/* ── Botão voltar ── */}
-          <TouchableOpacity
-            style={[styles.homeButton, { backgroundColor: colors.primary, margin: 16 }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.back();
-            }}
-          >
-            <Text style={styles.homeButtonText}>← {t("back")}</Text>
-          </TouchableOpacity>
+          <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-around", marginHorizontal: 16 }}>
+            {/* ── Botão compartilhar ── */}
+            <TouchableOpacity
+              style={[styles.homeButton, { backgroundColor: colors.primary, width: "45%" }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowShare(true);
+              }}
+            >
+              <Text style={styles.homeButtonText}>{t("celebration_share")}</Text>
+            </TouchableOpacity>
+
+            {/* ── Botão voltar ── */}
+            <TouchableOpacity
+              style={[styles.homeButton, { backgroundColor: colors.surface, opacity: 0.7, width: "45%" }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
+            >
+              <Text style={styles.homeButtonText}>← {t("back")}</Text>
+            </TouchableOpacity>
+          </View>
+
 
           <View style={{ height: 32 }} />
         </Animated.View>
       </ScrollView>
-    </View>
+
+      {/* Modal de compartilhamento */}
+      {run && (
+        <ShareRunModal
+          run={run}
+          visible={showShare}
+          onClose={() => setShowShare(false)}
+        />
+      )}
+    </View >
   );
 }

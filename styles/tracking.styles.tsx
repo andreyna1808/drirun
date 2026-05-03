@@ -21,11 +21,11 @@ export const TrackingStyles = (colors: any) => {
         },
         map: {
             width: "100%",
-            height: height * 0.6,
+            height: height * 0.52,
         },
         mapPlaceholder: {
             width: "100%",
-            height: height * 0.6,
+            height: height * 0.52,
             justifyContent: "center",
             alignItems: "center",
             backgroundColor: "#e0e0e0",
@@ -36,7 +36,7 @@ export const TrackingStyles = (colors: any) => {
         metricsContainer: {
             flexDirection: "row",
             justifyContent: "space-around",
-            paddingVertical: 20,
+            paddingVertical: 12,
             borderBottomWidth: 1,
             borderBottomColor: "#ccc",
         },
@@ -44,12 +44,12 @@ export const TrackingStyles = (colors: any) => {
             alignItems: "center",
         },
         metricValue: {
-            fontSize: 28,
+            fontSize: 20,
             fontWeight: "bold",
         },
         metricLabel: {
-            fontSize: 14,
-            marginTop: 5,
+            fontSize: 12,
+            marginTop: 2,
         },
         controlsContainer: {
             flex: 1,
@@ -58,16 +58,16 @@ export const TrackingStyles = (colors: any) => {
             paddingHorizontal: 20,
         },
         controlButton: {
-            paddingVertical: 15,
-            paddingHorizontal: 30,
+            paddingVertical: 12,
+            paddingHorizontal: 24,
             borderRadius: 30,
             width: "100%",
             alignItems: "center",
-            marginBottom: 10,
+            marginBottom: 8,
         },
         controlButtonText: {
             color: "white",
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: "bold",
         },
         startButton: {

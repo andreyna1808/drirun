@@ -98,7 +98,7 @@ export default {
   tracking_calories: "Kcal",
 
   // Run Summary
-  run_summary_title: "Activity Completed! 🎉",
+  run_summary_title: "Activity Completed!",
   run_summary_subtitle: "Great job! Here's your summary:",
   run_summary_save: "Save Activity",
   run_summary_discard: "Discard",
@@ -501,5 +501,28 @@ export default {
   calendar_today_message: "You haven't run today yet, what are you waiting for?!",
   calendar_missed_title: "That was tough... 😢",
   calendar_missed_message: "It's okay, everyone has tough days. The important thing is not to give up!",
-  loading_ad: "Preparing your content..."
+  loading_ad: "Preparing your content...",
+
+  // Share run
+  share_modal_title: "Share run",
+  share_dialog_title: "Share run – Dri GoRun",
+  share_route_unavailable: "route unavailable",
+  share_km_label: "km",
+
+  // Tracking – overlays and alerts
+  tracking_finishing: "Finishing run...",
+  tracking_bg_limited_title: "Limited tracking",
+  tracking_bg_limited_msg: "Could not activate background tracking. Your run will count while the app is open.",
+  tracking_notif_disabled_title: "Notifications disabled",
+  tracking_notif_disabled_msg: "Enable notifications to see alerts during your run.",
+  tracking_open_settings: "Open settings",
+  tracking_continue_without_notif: "Continue without notification",
+  tracking_bg_permission_title: "Background location",
+  tracking_bg_permission_msg: "To track with the screen off, go to Settings → DriRun → Location and choose \"Allow all the time\".\n\nYou can start without this, but tracking only works while the app is open.",
+  tracking_start_anyway: "Start anyway",
+
+  // Active run notification
+  run_tracking_active_title: "🏃 Run in progress",
+  run_tracking_paused_title: "⏸ Run paused",
+  run_tracking_body: "Tap to open DriRun.",
 };

@@ -158,19 +158,10 @@ export default function OnboardingScreen() {
   const goToNext = () => {
     if (step === 0) setStep(1);
     else if (step === 1 && validateProfile()) setStep(2);
-    else if (step === 2 && validateGoal()) setStep(3);
-    else if (step === 3) {
-      // Só permite finalizar se o usuário já tiver escolhido (permitir ou negar)
-      if (notificationsEnabled !== null) {
-        handleFinish();
-      } else {
-        Alert.alert(
-          t("onboarding_notifications_required_title") || "Escolha necessária",
-          t("onboarding_notifications_required_message") || "Por favor, escolha se deseja receber notificações ou não para continuar.",
-          [{ text: t("ok") || "OK" }]
-        );
-      }
-    }
+    else if (step === 2 && validateGoal()) {
+      setStep(3)
+      setNotificationsEnabled(null);
+    } else if (step === 3) handleFinish();
   };
 
   const goToPrev = () => {
@@ -215,12 +206,55 @@ export default function OnboardingScreen() {
   }
   function handleDenyNotifications() { setNotificationsEnabled(false); }
 
-  const handleFinish = useCallback(async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const profile = { name: name.trim(), age: parseInt(age), weight: parseFloat(weightKg), height: parseFloat(heightCm), sex: sex as "male" | "female" };
-    if (notificationsEnabled) await scheduleNotification(state?.pet?.name || "Seu Pet", profile.name, selectedTime);
-    dispatch({ type: "COMPLETE_ONBOARDING", payload: { profile, goalDays: parseInt(goalDays), notificationsEnabled: notificationsEnabled ?? false, notificationHour: notificationsEnabled ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}` : null } });
-  }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch]);
+  const handleFinish = useCallback(() => {
+    // Validação síncrona — pega o caso do botão de rodapé que pula goToNext.
+    const ageNum = parseInt(age);
+    const heightNum = parseFloat(heightCm);
+    const weightNum = parseFloat(weightKg);
+    if (
+      !name.trim() ||
+      !Number.isFinite(ageNum) || ageNum < 1 ||
+      !Number.isFinite(heightNum) || heightNum < 1 ||
+      !Number.isFinite(weightNum) || weightNum < 1 ||
+      (sex !== "male" && sex !== "female")
+    ) {
+      Alert.alert(t("error"), t("error_profile_incomplete") || "Preencha seus dados antes de aceitar o desafio.");
+      setStep(1);
+      return;
+    }
+
+    const profile = {
+      name: name.trim(),
+      age: ageNum,
+      weight: weightNum,
+      height: heightNum,
+      sex: sex as "male" | "female",
+    };
+
+    // Haptic é fire-and-forget — não trava a UI.
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { });
+
+    // DISPATCH PRIMEIRO — navegação imediata pra /(tabs).
+    dispatch({
+      type: "COMPLETE_ONBOARDING",
+      payload: {
+        profile,
+        goalDays: parseInt(goalDays),
+        notificationsEnabled: notificationsEnabled ?? false,
+        notificationHour: notificationsEnabled
+          ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime.getMinutes().toString().padStart(2, "0")}`
+          : null,
+      },
+    });
+
+    // SÓ DEPOIS agenda a notif diária — fire-and-forget. Se falhar, o usuário não percebe
+    // diferença visual, e a corrida do dia seguinte simplesmente não toca alarme.
+    if (notificationsEnabled) {
+      scheduleNotification(state?.pet?.name || "Seu Pet", profile.name, selectedTime).catch(
+        (e) => console.warn("[Onboarding] Falha ao agendar notif:", e)
+      );
+    }
+  }, [name, age, weightKg, heightCm, sex, goalDays, notificationsEnabled, selectedTime, dispatch, t, state?.pet?.name]);
 
   const styles = OnboardingStyles(colors);
 
@@ -380,6 +414,7 @@ export default function OnboardingScreen() {
           </View>
         );
       case 3:
+      case 3:
         return (
           <View style={[styles.stepContainer, { height: Dimensions.get("window").height - 200, display: "flex", justifyContent: "center" }]}>
             {/* Títulos sempre aparecem */}
@@ -436,28 +471,22 @@ export default function OnboardingScreen() {
             )}
 
             {notificationsEnabled === null && (
-              <Text style={[styles.goalHint, { color: colors.muted, marginBottom: 20, textAlign: "center" }]}>
-                {t("onboarding_notifications_ask")}
-              </Text>
-            )}
-
-            {/* Botões de escolha sempre visíveis */}
-            <View style={styles.notifButtons}>
-              <TouchableOpacity
-                style={[styles.notifAllowButton, { backgroundColor: colors.primary }]}
-                onPress={handleAllowNotifications}
-              >
-                <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.notifDenyButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
-                onPress={handleDenyNotifications}
-              >
-                <Text style={[styles.notifDenyText, { color: colors.muted }]}>
-                  {t("onboarding_notifications_deny")}
-                </Text>
-              </TouchableOpacity>
-            </View>
+              <View style={styles.notifButtons}>
+                <TouchableOpacity
+                  style={[styles.notifAllowButton, { backgroundColor: colors.primary }]}
+                  onPress={handleAllowNotifications}
+                >
+                  <Text style={styles.notifAllowText}>🔔 {t("onboarding_notifications_allow")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.notifDenyButton, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                  onPress={handleDenyNotifications}
+                >
+                  <Text style={[styles.notifDenyText, { color: colors.muted }]}>
+                    {t("onboarding_notifications_deny")}
+                  </Text>
+                </TouchableOpacity>
+              </View>)}
           </View>
         );
       default:
@@ -505,7 +534,19 @@ export default function OnboardingScreen() {
                 step === 0 && { flex: 1 },
                 step === 3 && notificationsEnabled === null && { opacity: 0.5, backgroundColor: colors.muted }
               ]}
-              onPress={goToNext}
+              onPress={() => {
+                if ((step == 3 && typeof notificationsEnabled == "boolean") || step == 2 || step == 1 || step == 0) {
+                  goToNext();
+                  console.log("AQUIEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+                  return
+                } else {
+                  Alert.alert(
+                    t("onboarding_notifications_required_title") || "Escolha necessária",
+                    t("onboarding_notifications_required_message") || "Por favor, escolha se deseja receber notificações ou não para continuar.",
+                    [{ text: t("ok") || "OK" }]
+                  );
+                }
+              }}
               disabled={step === 3 && notificationsEnabled === null}
             >
               <Text style={styles.nextButtonText}>{step === 3 ? t("onboarding_finish") : t("next")}</Text>
@@ -513,7 +554,7 @@ export default function OnboardingScreen() {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 

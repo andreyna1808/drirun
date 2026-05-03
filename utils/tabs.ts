@@ -1,3 +1,5 @@
+import { getLocalDateString } from "@/utils/tracking";
+
 export const MOTIVATIONAL_PHRASE_KEYS = [
     "home_motivational_1",
     "home_motivational_2",
@@ -16,7 +18,7 @@ export const formatDuration = (seconds: number): string => {
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
     if (h > 0) return `${h}h ${m}min`;
-    if (m > 0) return `${m}min ${String(s).padStart(2, "0")}s`;
+    if (m > 0) return `${m}' ${String(s).padStart(2, "0")}s`;
     return `${s}s`;
 }
 
@@ -24,17 +26,15 @@ export const formatPace = (paceSecondsPerKm: number): string => {
     if (!isFinite(paceSecondsPerKm) || paceSecondsPerKm <= 0) return "--:--";
     const m = Math.floor(paceSecondsPerKm / 60);
     const s = Math.round(paceSecondsPerKm % 60);
-    return `${m}'${String(s).padStart(2, "0")}s`;
+    return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export const calculateStreak = (runs: Array<{ date: string }>): number => {
     if (runs.length === 0) return 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     let streak = 0;
-    const checkDate = new Date(today);
+    const checkDate = new Date();
     while (true) {
-        const dateStr = checkDate.toISOString().split("T")[0];
+        const dateStr = getLocalDateString(checkDate);
         const hasRun = runs.some((r) => r.date === dateStr);
         if (!hasRun) break;
         streak++;

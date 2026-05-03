@@ -2,18 +2,20 @@ import 'dotenv/config';
 import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
-  name: "Dri GoRun?!",
+  name: "Dri GoRun",
   slug: "drirun",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/logo.png",
   userInterfaceStyle: "automatic",
+  platforms: ["ios", "android"],
 
   ios: {
     bundleIdentifier: "com.drirun.app",
     infoPlist: {
-      NSLocationWhenInUseUsageDescription:
-        "DriRun precisa da sua localização para rastrear sua corrida.",
+      NSLocationWhenInUseUsageDescription: "...",
+      NSLocationAlwaysAndWhenInUseUsageDescription: "DriRun precisa rastrear sua corrida em segundo plano.",
+      UIBackgroundModes: ["location", "fetch"],
     },
   },
 
@@ -28,6 +30,10 @@ const config: ExpoConfig = {
       "ACCESS_FINE_LOCATION",
       "ACCESS_COARSE_LOCATION",
       "BILLING",
+      "ACCESS_BACKGROUND_LOCATION",
+      "FOREGROUND_SERVICE",
+      "FOREGROUND_SERVICE_LOCATION",
+      "RECEIVE_BOOT_COMPLETED",
     ],
 
     // config: {
@@ -51,8 +57,6 @@ const config: ExpoConfig = {
         },
       },
     ],
-
-    "expo-router",
     [
       "react-native-google-mobile-ads",
       {
@@ -62,8 +66,26 @@ const config: ExpoConfig = {
     ],
 
     "@rnmapbox/maps",
-    "expo-location",
-    "expo-notifications",
+    [
+      "expo-location",
+      {
+        // Necessário pra rastreamento em segundo plano + foreground service no Android.
+        // Sem isso o startLocationUpdatesAsync com foregroundService crasha.
+        locationAlwaysAndWhenInUsePermission:
+          "DriRun precisa rastrear sua corrida em segundo plano.",
+        isAndroidBackgroundLocationEnabled: true,
+        isAndroidForegroundServiceEnabled: true,
+      },
+    ],
+    [
+      "expo-notifications",
+      {
+        // Configuração do canal Android — sem isso, scheduleNotificationAsync pode falhar
+        // ou a notificação não aparece. Substitua os caminhos pelos seus assets se quiser.
+        icon: "./assets/images/logo.png",
+        color: "#04112d",
+      },
+    ],
   ],
 
   experiments: {

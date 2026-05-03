@@ -9,6 +9,7 @@ import React, {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppState, NotificationSettings, PetData, RunRecord, UserProfile } from "@/interfaces/context";
 import { DEFAULT_PET, INITIAL_STATE } from "@/utils/context";
+import { getLocalDateString } from "@/utils/tracking";
 
 type Action =
   | { type: "LOAD_STATE"; payload: AppState }
@@ -34,17 +35,42 @@ type Action =
   | { type: "UPDATE_NOTIFICATIONS"; payload: NotificationSettings }
   | { type: "RESET_ALL" };
 
+// ── Validação de profile ─────────────────────────────────────────────────────
+// Garante que NUNCA marcamos isOnboarded: true com perfil corrompido (NaN no
+// AsyncStorage vira null/string, e parseFloat("") vira NaN — tudo isso volta aqui).
+export function isProfileValid(
+  profile: UserProfile | null | undefined
+): profile is UserProfile {
+  if (!profile) return false;
+  if (typeof profile.name !== "string" || !profile.name.trim()) return false;
+  if (typeof profile.age !== "number" || !Number.isFinite(profile.age) || profile.age < 1) return false;
+  if (typeof profile.height !== "number" || !Number.isFinite(profile.height) || profile.height < 1) return false;
+  if (typeof profile.weight !== "number" || !Number.isFinite(profile.weight) || profile.weight < 1) return false;
+  if (profile.sex !== "male" && profile.sex !== "female") return false;
+  return true;
+}
+
 // ── Reducer ───────────────────────────────────────────────────────────────────
 
 function appReducer(state: AppState, action: Action): AppState {
   console.log("[Reducer] Action:", action.type);
   switch (action.type) {
-    case "LOAD_STATE":
+    case "LOAD_STATE": {
+      // Mesmo que o storage diga isOnboarded: true, se o profile gravado está
+      // corrompido a gente *desfaz* o flag — o usuário cai no onboarding de novo.
+      const profileOk = isProfileValid(action.payload.profile ?? null);
+      const onboardedFromPayload = action.payload.isOnboarded ?? false;
+      if (onboardedFromPayload && !profileOk) {
+        console.warn(
+          "[Reducer] LOAD_STATE com isOnboarded:true mas profile inválido — voltando pro onboarding.",
+          action.payload.profile
+        );
+      }
       return {
         ...INITIAL_STATE,
         ...action.payload,
-        isOnboarded: action.payload.isOnboarded ?? false,
-        profile: action.payload.profile ?? null,
+        isOnboarded: onboardedFromPayload && profileOk,
+        profile: profileOk ? action.payload.profile! : null,
         goalDays: action.payload.goalDays ?? INITIAL_STATE.goalDays,
         goalStartDate: action.payload.goalStartDate ?? null,
         runs: action.payload.runs ?? [],
@@ -55,31 +81,32 @@ function appReducer(state: AppState, action: Action): AppState {
         },
         notifications: action.payload.notifications ?? { enabled: false, hour: null },
       };
+    }
 
-    case "COMPLETE_ONBOARDING":
+    case "COMPLETE_ONBOARDING": {
+      // Bloqueia onboarding com lixo. O onboarding screen tem validação por step,
+      // mas o botão "Próximo" do rodapé pode chamar handleFinish sem passar por ela.
+      if (!isProfileValid(action.payload.profile)) {
+        console.warn(
+          "[Reducer] COMPLETE_ONBOARDING ignorado — profile inválido:",
+          action.payload.profile
+        );
+        return state; // mantém estado atual; usuário continua no onboarding
+      }
+
       console.log("[Reducer] Onboarding concluído!");
-      console.log({
-        ...state,
-        isOnboarded: true,
-        profile: action.payload.profile,
-        goalDays: action.payload.goalDays,
-        goalStartDate: new Date().toISOString().split("T")[0],
-        notifications: {
-          enabled: action.payload.notificationsEnabled,
-          hour: action.payload.notificationHour,
-        },
-      })
       return {
         ...state,
         isOnboarded: true,
         profile: action.payload.profile,
         goalDays: action.payload.goalDays,
-        goalStartDate: new Date().toISOString().split("T")[0],
+        goalStartDate: getLocalDateString(),
         notifications: {
           enabled: action.payload.notificationsEnabled,
           hour: action.payload.notificationHour,
         },
       };
+    }
 
     case "ADD_RUN": {
       const newRuns = [...state.runs, action.payload];
@@ -179,12 +206,12 @@ export function calculatePetState(pet: PetData, goalDays: number): PetData {
 }
 
 export function hasRunToday(runs: RunRecord[]): boolean {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   return runs.some((r) => r.date === today);
 }
 
 export function getTodayRun(runs: RunRecord[]): RunRecord | null {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   return runs.find((r) => r.date === today) ?? null;
 }
 
@@ -236,12 +263,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const parsed: AppState = JSON.parse(stored || "null");
           console.log("[AppContext] Dados parseados. isOnboarded:", parsed.isOnboarded, "profile:", !!parsed.profile);
 
-          // Só considera válido se o onboarding foi concluído e o perfil existe
-          if (parsed.isOnboarded && parsed.profile) {
+          // Só considera válido se o onboarding foi concluído E o perfil é íntegro.
+          // isProfileValid checa NaN, strings vazias, sex em branco, etc.
+          if (parsed.isOnboarded && isProfileValid(parsed.profile)) {
             console.log("[AppContext] Estado válido, carregando...");
             dispatch({ type: "LOAD_STATE", payload: parsed });
           } else {
-            console.log("[AppContext] Estado inválido ou incompleto, resetando para INITIAL_STATE.");
+            console.log("[AppContext] Estado inválido ou perfil corrompido, resetando para INITIAL_STATE.", parsed.profile);
             // Se existiam dados mas não são válidos, sobrescreve com o estado inicial
             saveStateToStorage(INITIAL_STATE);
             dispatch({ type: "LOAD_STATE", payload: INITIAL_STATE });

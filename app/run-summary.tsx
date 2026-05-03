@@ -17,8 +17,10 @@ import { useColors } from "@/hooks/use-colors";
 import { RunSummaryStyles } from "@/styles/run-summary.styles";
 import { useRewardedAd } from "@/hooks/use-ads";
 import { formatDuration, formatPace } from "@/utils/tabs";
+import { Ionicons } from "@expo/vector-icons";
 import { MetricItem } from "@/components/metric-item";
 import { MapView } from "@/components/map-view";
+import { ShareRunModal } from "@/components/share-run-modal";
 
 MapboxGL.setAccessToken(Constants.expoConfig?.extra?.MAPBOX_PUBLIC_TOKEN ?? "");
 
@@ -40,6 +42,7 @@ export default function RunSummaryScreen() {
   const metricsOpacity = useRef(new Animated.Value(0)).current;
 
   const [adWatched, setAdWatched] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const { showAd, loaded } = useRewardedAd(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -106,7 +109,7 @@ export default function RunSummaryScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* ── Cabeçalho de celebração ── */}
-        <View style={[styles.celebrationHeader, { backgroundColor: colors.primary }]}>
+        <View style={[styles.celebrationHeader]}>
 
           <Text style={styles.celebrationTitle}>
             {t("celebration_day_completed", { currentDay, goalDays })}
@@ -132,10 +135,26 @@ export default function RunSummaryScreen() {
         {/* ── Métricas ── */}
         <Animated.View style={{ transform: [{ translateY: metricsSlide }], opacity: metricsOpacity }}>
           <View style={[styles.metricsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.metricsTitle, { color: colors.foreground }]}>📊 {t("run_summary_title")}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <Text style={[styles.metricsTitle, { color: colors.foreground, marginBottom: 0 }]}>📊 {t("run_summary_title")}</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowShare(true);
+                }}
+                style={{
+                  flexDirection: "row", alignItems: "center", gap: 4,
+                  backgroundColor: "#FF8C5A" + "22", borderRadius: 20,
+                  paddingHorizontal: 10, paddingVertical: 6,
+                }}
+              >
+                <Ionicons name="share-outline" size={16} color="#FF8C5A" />
+                <Text style={{ color: "#FF8C5A", fontSize: 13, fontWeight: "600" }}>{t("celebration_share")}</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.metricsGrid}>
               <MetricItem label={t("metric_distance")} value={`${(run.distance / 1000).toFixed(2)} km`} emoji="📍" colors={colors} />
-              <MetricItem label={t("metric_pace")} value={`${formatPace(run.pace)} /km`} emoji="⚡" colors={colors} />
+              <MetricItem label={t("metric_pace")} value={`${formatPace(run.pace)} min/km`} emoji="⚡" colors={colors} />
               <MetricItem label={t("metric_duration")} value={formatDuration(run.duration)} emoji="⏱️" colors={colors} />
               <MetricItem label={t("metric_calories")} value={`${run.calories} kcal`} emoji="🔥" colors={colors} />
             </View>
@@ -167,21 +186,6 @@ export default function RunSummaryScreen() {
             </View>
           )}
 
-          {/* ── Mensagem motivacional ── */}
-          <View style={[styles.motivationCard, { backgroundColor: colors.primary + "15", borderColor: colors.primary }]}>
-            <Text style={[styles.motivationText, { color: colors.primary }]}>
-              {currentDay >= goalDays
-                ? t("motivation_complete")
-                : currentDay >= goalDays * 0.75
-                  ? t("motivation_75")
-                  : currentDay >= goalDays * 0.5
-                    ? t("motivation_50")
-                    : currentDay >= 7
-                      ? t("motivation_7days")
-                      : t("motivation_default", { currentDay })}
-            </Text>
-          </View>
-
           {/* ── Botão voltar ── */}
           <TouchableOpacity
             style={[styles.homeButton, { backgroundColor: colors.primary }]}
@@ -196,6 +200,15 @@ export default function RunSummaryScreen() {
           <View style={{ height: 32 }} />
         </Animated.View>
       </ScrollView>
+
+      {/* Modal de compartilhamento */}
+      {run && (
+        <ShareRunModal
+          run={run}
+          visible={showShare}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </View>
   );
 }

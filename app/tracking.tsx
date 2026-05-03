@@ -5,10 +5,13 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Linking,
+  AppState,
 } from "react-native";
 import MapboxGL from "@rnmapbox/maps";
 import Constants from "expo-constants";
 import * as Location from "expo-location";
+import * as Notifications from "expo-notifications";
 import { useKeepAwake } from "expo-keep-awake";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
@@ -19,8 +22,17 @@ import { TrackingStyles } from "@/styles/tracking.styles";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_AD_UNIT_ID } from "@/hooks/use-ads";
 import { formatDuration, formatPace } from "@/utils/tabs";
-import { haversineDistance, estimateCalories } from "@/utils/tracking";
+import { haversineDistance, estimateCalories, getLocalDateString } from "@/utils/tracking";
 import { RunRecord } from "@/interfaces/context";
+import {
+  startBackgroundLocation,
+  stopBackgroundLocation,
+  setLocationUpdateCallback,
+} from "@/hooks/background-tracking";
+import {
+  showRunActiveNotification,
+  dismissRunActiveNotification,
+} from "@/hooks/run-notification";
 
 MapboxGL.setAccessToken(Constants.expoConfig?.extra?.MAPBOX_PUBLIC_TOKEN ?? "");
 
@@ -31,10 +43,9 @@ export default function TrackingScreen() {
   const { state, dispatch } = useApp();
   const colors = useColors();
   const cameraRef = useRef<MapboxGL.Camera>(null);
-
-  // ── Estado da corrida ──────────────────────────────────────────────────────
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [duration, setDuration] = useState(0);
   const [distance, setDistance] = useState(0);
   const [route, setRoute] = useState<Array<{ latitude: number; longitude: number }>>([]);
@@ -43,21 +54,39 @@ export default function TrackingScreen() {
   const [hasPermission, setHasPermission] = useState(false);
 
   // Refs para evitar closures stale
-  const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFinishingRef = useRef(false);
   const lastLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const distanceRef = useRef(0);
   const durationRef = useRef(0);
   const routeRef = useRef<Array<{ latitude: number; longitude: number }>>([]);
+  const isPausedRef = useRef(false);
+  const isRunningRef = useRef(false);
+  const lastUiUpdateRef = useRef(0);
 
-  // ── Permissão de localização ───────────────────────────────────────────────
+  // ── Timer local ───────────────────────────────────────────────────────────
+  // Fica aqui no componente — o background-tracking não precisa mais saber de tempo.
+  const runStartTimeRef  = useRef(0);
+  const totalPausedMsRef = useRef(0);
+  const pauseStartRef    = useRef(0);
+
+  const getElapsedSeconds = useCallback((): number => {
+    if (runStartTimeRef.current === 0) return 0;
+    const pausedSoFar = isPausedRef.current
+      ? totalPausedMsRef.current + (Date.now() - pauseStartRef.current)
+      : totalPausedMsRef.current;
+    return Math.max(0, Math.floor((Date.now() - runStartTimeRef.current - pausedSoFar) / 1000));
+  }, []);
+
+  // ── Permissão de FOREGROUND no mount ───────────────────────────────────────
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
+      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== "granted") {
         setLocationError(t("tracking_permission_denied"));
         return;
       }
+
       setHasPermission(true);
 
       try {
@@ -79,111 +108,151 @@ export default function TrackingScreen() {
       }
     })();
 
+    // Limpeza ao sair da tela sem finalizar
     return () => {
-      locationSubscription.current?.remove();
-      if (timerRef.current) clearInterval(timerRef.current);
+      stopAll();
     };
   }, []);
 
-  // ── Iniciar corrida ────────────────────────────────────────────────────────
-  const startRun = useCallback(async () => {
-    if (!hasPermission) {
-      Alert.alert(t("tracking_permission_title"), t("tracking_permission_msg"));
-      return;
-    }
+  // ── Ressincronização ao voltar do background ──────────────────────────────
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", async (nextState) => {
+      if (nextState !== "active") return;
+      if (!isRunningRef.current) return;
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setIsRunning(true);
-    setIsPaused(false);
-    setDuration(0);
-    setDistance(0);
-    setRoute([]);
-    distanceRef.current = 0;
-    durationRef.current = 0;
-    routeRef.current = [];
-    lastLocationRef.current = null;
-
-    timerRef.current = setInterval(() => {
-      durationRef.current += 1;
-      setDuration((d) => d + 1);
-    }, 1000);
-
-    locationSubscription.current = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 2000,
-        distanceInterval: 5,
-      },
-      (location) => {
-        const coords = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
-
-        setCurrentLocation(coords);
-
-        if (lastLocationRef.current) {
-          const delta = haversineDistance(
-            lastLocationRef.current.latitude,
-            lastLocationRef.current.longitude,
-            coords.latitude,
-            coords.longitude
-          );
-          if (delta < 50) {
-            distanceRef.current += delta;
-            setDistance(distanceRef.current);
-          }
-        }
-
-        lastLocationRef.current = coords;
-        routeRef.current = [...routeRef.current, coords];
-        setRoute([...routeRef.current]);
-
-        // Centraliza câmera na posição atual
-        cameraRef.current?.setCamera({
-          centerCoordinate: [coords.longitude, coords.latitude],
-          zoomLevel: 16,
-          animationDuration: 500,
-        });
+      if (!isPausedRef.current) {
+        const elapsed = getElapsedSeconds();
+        durationRef.current = elapsed;
+        setDuration(elapsed);
       }
-    );
-  }, [hasPermission, t]);
+      setDistance(distanceRef.current);
+
+      if (isPausedRef.current) return;
+
+      // Re-checa bg permission e reinicia o tracking se necessário
+      await new Promise((r) => setTimeout(r, 400));
+      const { status } = await Location.getBackgroundPermissionsAsync();
+      if (status === "granted") {
+        try {
+          await stopBackgroundLocation();
+          await startBackgroundLocation();
+        } catch (e) {
+          console.warn("[Tracking] Falha ao re-iniciar bg location:", e);
+        }
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  // ── Garantir permissão de background antes do start ───────────────────────
+  const ensureBackgroundPermission = useCallback(async (): Promise<boolean> => {
+    // Já temos bg granted? beleza
+    const current = await Location.getBackgroundPermissionsAsync();
+    if (current.status === "granted") return true;
+
+    // Tenta pedir — no Android 11+ redireciona pra Configurações.
+    const requested = await Location.requestBackgroundPermissionsAsync();
+    if (requested.status === "granted") return true;
+
+    // Não rolou — pergunta se quer abrir as Configurações ou seguir só foreground.
+    return new Promise<boolean>((resolve) => {
+      Alert.alert(
+        t("tracking_bg_permission_title"),
+        t("tracking_bg_permission_msg"),
+        [
+          {
+            text: t("tracking_start_anyway"),
+            onPress: () => resolve(true),
+          },
+          {
+            text: t("tracking_open_settings"),
+            onPress: () => {
+              resolve(false);
+              Linking.openSettings().catch((e) =>
+                console.warn("[Tracking] openSettings falhou:", e)
+              );
+            },
+          },
+          {
+            text: t("cancel"),
+            style: "cancel",
+            onPress: () => resolve(false),
+          },
+        ]
+      );
+    });
+  }, [t]);
+
+  // ── Para tudo ──────────────────────────────────────────────────────────────
+  const stopAll = useCallback(async () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    isRunningRef.current = false;
+    isPausedRef.current = false;
+    setLocationUpdateCallback(null);
+    await stopBackgroundLocation();
+    dismissRunActiveNotification();
+  }, []);
 
   // ── Pausar/Retomar ─────────────────────────────────────────────────────────
   const togglePause = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (isPaused) {
+    if (!isRunningRef.current) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+
+    if (isPausedRef.current) {
+      totalPausedMsRef.current += Date.now() - pauseStartRef.current;
+      pauseStartRef.current = 0;
+      isPausedRef.current = false;
       setIsPaused(false);
+      showRunActiveNotification(false);
+      // Timer de UI — 100ms para não pular segundos
       timerRef.current = setInterval(() => {
-        durationRef.current += 1;
-        setDuration((d) => d + 1);
-      }, 1000);
+        if (isPausedRef.current) return;
+        const elapsed = getElapsedSeconds();
+        if (elapsed !== durationRef.current) {
+          durationRef.current = elapsed;
+          setDuration(elapsed);
+        }
+      }, 100);
     } else {
+      // Pausar — marca o instante de início da pausa
+      pauseStartRef.current = Date.now();
+      isPausedRef.current = true;
       setIsPaused(true);
-      if (timerRef.current) clearInterval(timerRef.current);
+      showRunActiveNotification(true);
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     }
-  }, [isPaused]);
+  }, [getElapsedSeconds]);
 
   // ── Finalizar corrida ──────────────────────────────────────────────────────
   const confirmFinish = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    locationSubscription.current?.remove();
+    if (isFinishingRef.current) return;
+    isFinishingRef.current = true;
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-    const finalDuration = durationRef.current;
+    // 1. Captura dados ANTES de parar qualquer coisa
+    const finalDuration = getElapsedSeconds();
     const finalDistance = distanceRef.current;
     const finalRoute = routeRef.current;
 
-    const paceSecondsPerKm =
-      finalDistance > 0 ? (finalDuration / (finalDistance / 1000)) : 0;
+    // 2. Para os timers locais imediatamente (síncrono, sem await)
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    isRunningRef.current = false;
+    setLocationUpdateCallback(null);
 
+    // 3. Mostra overlay + haptic — usuário vê feedback visual imediato
+    setIsFinishing(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+
+    // 4. Salva o registro
+    const paceSecondsPerKm =
+      finalDistance > 0 ? finalDuration / (finalDistance / 1000) : 0;
     const weightKg = state.profile?.weight ?? 70;
     const calories = estimateCalories(weightKg, finalDuration);
 
     const runRecord: RunRecord = {
       id: Date.now().toString(),
-      date: new Date().toISOString().split("T")[0],
+      date: getLocalDateString(),
       duration: finalDuration,
       distance: finalDistance,
       pace: paceSecondsPerKm,
@@ -192,22 +261,56 @@ export default function TrackingScreen() {
     };
 
     dispatch({ type: "ADD_RUN", payload: runRecord });
-    router.replace(`/run-summary?runId=${runRecord.id}` as any);
+    dispatch({ type: "ADD_GEMS", payload: 25 });
+
+    // 5. Breve delay pra overlay aparecer, depois navega
+    setTimeout(() => {
+      router.replace(`/run-summary?runId=${runRecord.id}` as any);
+    }, 600);
+
+    // 6. Cleanup do GPS e notificação em background
+    stopBackgroundLocation().catch(console.warn);
+    dismissRunActiveNotification().catch(console.warn);
   }, [state.profile, dispatch]);
 
-  const cancelRun = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    locationSubscription.current?.remove();
+  const cancelRun = useCallback(async () => {
+    await stopAll();
     router.back();
-  }, []);
+  }, [stopAll]);
 
   const finishRun = useCallback(() => {
+    // Pausa o cronômetro IMEDIATAMENTE — feedback visual instantâneo ao toque
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (!isPausedRef.current) {
+      pauseStartRef.current = Date.now();
+      isPausedRef.current = true;
+      setIsPaused(true);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+
+    // Se o usuário cancelar o Alert, retoma o timer de onde parou
+    const resumeTimer = () => {
+      if (isFinishingRef.current) return;
+      totalPausedMsRef.current += Date.now() - pauseStartRef.current;
+      pauseStartRef.current = 0;
+      isPausedRef.current = false;
+      setIsPaused(false);
+      timerRef.current = setInterval(() => {
+        if (isPausedRef.current) return;
+        const elapsed = getElapsedSeconds();
+        if (elapsed !== durationRef.current) {
+          durationRef.current = elapsed;
+          setDuration(elapsed);
+        }
+      }, 100);
+    };
+
     if (distanceRef.current < 100) {
       Alert.alert(
         t("tracking_short_run_title"),
         t("tracking_short_run_message"),
         [
-          { text: t("tracking_continue"), style: "cancel" },
+          { text: t("tracking_continue"), style: "cancel", onPress: resumeTimer },
           { text: t("tracking_cancel"), onPress: cancelRun, style: "destructive" },
         ]
       );
@@ -216,21 +319,137 @@ export default function TrackingScreen() {
 
     Alert.alert(
       t("tracking_finish_confirm_title"),
-      t("tracking_finish_confirm_message", { distance: (distanceRef.current / 1000).toFixed(2) }),
+      t("tracking_finish_confirm_message", {
+        distance: (distanceRef.current / 1000).toFixed(2),
+      }),
       [
-        { text: t("tracking_continue"), style: "cancel" },
+        { text: t("tracking_continue"), style: "cancel", onPress: resumeTimer },
         { text: t("tracking_finish"), onPress: confirmFinish },
       ]
     );
-  }, [cancelRun, confirmFinish, t]);
+  }, [cancelRun, confirmFinish, t, getElapsedSeconds]);
+
+  // ── Iniciar corrida ────────────────────────────────────────────────────────
+  const startRun = useCallback(async () => {
+    if (!hasPermission) {
+      Alert.alert(t("tracking_permission_title"), t("tracking_permission_msg"));
+      return;
+    }
+
+    // Pede permissão de notificação — necessária para a sobreposição da corrida aparecer.
+    // Fazemos aqui (não no boot) para o usuário entender o contexto do pedido.
+    const { status: notifStatus } = await Notifications.requestPermissionsAsync();
+    if (notifStatus !== "granted") {
+      Alert.alert(
+        t("tracking_notif_disabled_title"),
+        t("tracking_notif_disabled_msg"),
+        [
+          { text: t("tracking_open_settings"), onPress: () => Linking.openSettings() },
+          { text: t("tracking_continue_without_notif") },
+        ]
+      );
+    }
+
+    // Pergunta sobre bg aqui (e não no mount) — assim quem volta das Configurações
+    // já entra com permissão fresh.
+    const canStart = await ensureBackgroundPermission();
+    if (!canStart) return;
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setIsRunning(true);
+    setIsPaused(false);
+    setDuration(0);
+    setDistance(0);
+    setRoute([]);
+    isRunningRef.current = true;
+    isPausedRef.current = false;
+    isFinishingRef.current = false;
+    distanceRef.current = 0;
+    durationRef.current = 0;
+    routeRef.current = [];
+    lastLocationRef.current = null;
+
+    // Inicia o timer local baseado em timestamp.
+    runStartTimeRef.current  = Date.now();
+    totalPausedMsRef.current = 0;
+    pauseStartRef.current    = 0;
+
+    // Notificação estática — aparece imediatamente e fica até o fim da corrida.
+    showRunActiveNotification(false);
+
+    // Timer de UI — roda a cada 100ms mas só atualiza o display quando o segundo
+    // efetivamente muda. Isso resolve o problema de o setInterval de 1000ms pular
+    // segundos quando o JS thread está ocupado renderizando o mapa.
+    timerRef.current = setInterval(() => {
+      if (isPausedRef.current) return;
+      const elapsed = getElapsedSeconds();
+      if (elapsed !== durationRef.current) {
+        durationRef.current = elapsed;
+        setDuration(elapsed);
+      }
+    }, 100);
+
+    // Callback que recebe localização do background task
+    setLocationUpdateCallback((coords: any) => {
+      if (isPausedRef.current) return; // ignora updates enquanto pausado
+
+      // ── Distância: sempre calculada por ponto (precisão máxima) ────────────
+      if (lastLocationRef.current) {
+        const delta = haversineDistance(
+          lastLocationRef.current.latitude,
+          lastLocationRef.current.longitude,
+          coords.latitude,
+          coords.longitude
+        );
+        if (delta < 50) {
+          distanceRef.current += delta;
+        }
+      }
+      lastLocationRef.current = coords;
+      routeRef.current.push(coords); // O(1) — sem copiar o array inteiro a cada ponto
+
+      // ── UI (mapa, rota, câmera): throttled a 2s ────────────────────────────
+      // Renderizar a linha do Mapbox a cada GPS update (~1s) bloqueia o JS thread
+      // e impede o setInterval de 100ms de disparar na hora certa, causando o
+      // "pulo" de segundos no cronômetro. Com 2s o mapa ainda parece fluido mas
+      // o timer pode respirar entre os renders.
+      const now = Date.now();
+      if (now - lastUiUpdateRef.current > 2000) {
+        lastUiUpdateRef.current = now;
+        setCurrentLocation(coords);
+        setDistance(distanceRef.current);
+        setRoute([...routeRef.current]);
+        cameraRef.current?.setCamera({
+          centerCoordinate: [coords.longitude, coords.latitude],
+          zoomLevel: 16,
+          animationDuration: 500,
+        });
+      }
+    });
+
+    // Inicia task de background. Se falhar (ex: app entrou em background, permissão
+    // revogada no meio do caminho, etc), a gente NÃO derruba a corrida — só loga.
+    // O timer + a UI continuam funcionando enquanto o app estiver em foreground.
+    try {
+      await startBackgroundLocation();
+    } catch (e) {
+      console.warn("[Tracking] startBackgroundLocation falhou — seguindo só em foreground:", e);
+      Alert.alert(
+        t("tracking_bg_limited_title"),
+        t("tracking_bg_limited_msg")
+      );
+    }
+  }, [hasPermission, t, ensureBackgroundPermission]);
 
   // ── Métricas calculadas ────────────────────────────────────────────────────
   const currentPace = distance > 0 ? duration / (distance / 1000) : 0;
   const formattedPace = formatPace(currentPace);
   const formattedDuration = formatDuration(duration);
-  const formattedDistance = (distance / 1000).toFixed(2);
+  // Mostra metros quando < 1 km (ex: "350 m"), km quando >= 1 km (ex: "1.23 km")
+  const formattedDistance = distance < 1000
+    ? `${Math.round(distance)} m`
+    : `${(distance / 1000).toFixed(2)} km`;
 
-  // Converte rota para formato GeoJSON do Mapbox
   const routeGeoJSON: GeoJSON.Feature<GeoJSON.LineString> = {
     type: "Feature",
     geometry: {
@@ -263,10 +482,8 @@ export default function TrackingScreen() {
             zoomLevel={15}
           />
 
-          {/* Localização do usuário */}
           <MapboxGL.UserLocation visible />
 
-          {/* Linha da rota */}
           {route.length > 1 && (
             <MapboxGL.ShapeSource id="routeSource" shape={routeGeoJSON}>
               <MapboxGL.LineLayer
@@ -281,7 +498,6 @@ export default function TrackingScreen() {
             </MapboxGL.ShapeSource>
           )}
 
-          {/* Marcador de início */}
           {route.length > 0 && (
             <MapboxGL.PointAnnotation
               id="startMarker"
@@ -289,7 +505,7 @@ export default function TrackingScreen() {
             >
               <View style={{
                 width: 16, height: 16, borderRadius: 8,
-                backgroundColor: "green", borderWidth: 2, borderColor: "#fff"
+                backgroundColor: "green", borderWidth: 2, borderColor: "#fff",
               }} />
             </MapboxGL.PointAnnotation>
           )}
@@ -353,6 +569,20 @@ export default function TrackingScreen() {
             size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
             requestOptions={{ requestNonPersonalizedAdsOnly: true }}
           />
+        </View>
+      )}
+
+      {/* Overlay de finalização */}
+      {isFinishing && (
+        <View style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: colors.background + "EE",
+          justifyContent: "center", alignItems: "center", gap: 16,
+        }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "600" }}>
+            {t("tracking_finishing")}
+          </Text>
         </View>
       )}
     </View>
